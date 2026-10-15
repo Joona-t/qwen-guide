@@ -2,6 +2,27 @@
 
 Newest first.
 
+## ITER-006 — "A program, written as weights" widget in Part 2 (2026-10-15)
+- **Why:** Part 2 says weights are numbers and that training changes them, but never showed *why* numbers can hold
+  behaviour. Cheng Lou's [handwired](https://github.com/chenglou/handwired) (MIT) rewrites ordinary JS control flow
+  as multiplies, adds and ReLU; its first example is the whole argument in two lines.
+- **What:** `template/widgets/handwired.html` + a `calc-wired` block in `template/widgets.js`: the program
+  `a > 4 ? 10 : 12` beside its rewrite `above4 = relu(a − 4) − relu(a − 5); result = above4·10 + (1 − above4)·12`,
+  with a slider for `a` (0 to 10, step 0.25) and both results live. The math is exposed on `FineTuneMath`
+  (`relu`, `wiredProgram`, `wiredGate`, `wiredNetwork`). Placed after the "four ways to change behaviour" table with
+  a lead-in that credits the repo and links the live demo. Nothing from the repo is loaded; the page stays one file.
+- **Honest edge:** the rewrite is exact for whole numbers only. Between 4 and 5 the gate ramps, so `a = 4.5` gives 11
+  where the program gives 10. The widget's note and caveat say so rather than hiding the slider's fractional stops.
+- **Tests:** `verify.mjs` asserts agreement for every whole `a` in 0..10 (plus −3, 3.9, 5.1 and 1e6), the gate stays
+  in [0, 1], and the ramp values at 4.25 / 4.5 / 4.75 (191 checks, PASS).
+- **Verified:** 1400px two columns side by side, 360px stacked, no horizontal overflow (scrollWidth = 360), no
+  console errors; Candy and Noir checked.
+- **Review (3 auditors + 6 skeptics, all 6 findings confirmed, 0 debunked) fixed before commit:** caveat overclaimed
+  "whole numbers only" (the rewrite is exact everywhere outside the 4-to-5 ramp); `.metrics--1` lost the cascade to a
+  later `.metrics` rule; the live region wrapped five bare numbers while the summary sentence sat outside it (now the
+  `.calc__out` pattern the other widgets use); `<p class="wired__tag">` picked up the 18px body-text rule; two
+  identical formatters.
+
 ## ITER-005 — "Expand table" control on wide tables (2026-10-15)
 - **What:** tables with five or more columns get an Expand/Collapse button. Expanded, the table breaks out of the
   700px reading column: rightwards to the page gutter when the contents rail is visible, centred to the full width

@@ -38,12 +38,19 @@ ok(a.trainable === 131072 && a.base === 16777216, 'LoRA count'); near(a.ratio, 0
 near(M.weights(4.66, 16).gb, 9.32); near(M.weights(4.66, 4).gb, 2.33);
 near(M.weights(9, 16).gib, 16.763806343078613);
 ok(JSON.stringify(M.QUIZ) === '["b","b","a","b"]', 'quiz key');
+// handwired: program and network agree on every whole a in 0..10; between 4 and 5 the gate ramps (documented in the widget caveat)
+for (let a = 0; a <= 10; a++) ok(M.wiredProgram(a) === M.wiredNetwork(a), `handwired disagrees at a=${a}`);
+for (let a = 0; a <= 10; a += 0.25) ok(M.wiredGate(a) >= 0 && M.wiredGate(a) <= 1, 'gate outside [0,1]');
+near(M.wiredGate(4.5), 0.5); near(M.wiredNetwork(4.5), 11); ok(M.wiredProgram(4.5) === 10, 'program at 4.5');
+near(M.wiredNetwork(4.25), 11.5); near(M.wiredNetwork(4.75), 10.5);
+for (const a of [-3, 0, 3.9, 4, 5, 5.1, 10, 1e6]) ok(M.wiredProgram(a) === M.wiredNetwork(a), `handwired disagrees at a=${a}`);
 
 // 3. page integrity
 const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
 ok(ids.length === new Set(ids).size, 'duplicate ids');
 for (const [, id] of html.matchAll(/href="#([^"]+)"/g)) ok(ids.includes(id), `missing anchor #${id}`);
-for (const n of ['gradient', 'lora', 'memory', 'quiz']) ok(!md.includes(`widget:${n}`) || html.includes(`id="${n === 'gradient' ? 'calc-step' : n === 'lora' ? 'calc-lora' : n === 'memory' ? 'calc-mem' : 'quizForm'}"`), `widget ${n} not rendered`);
+const WIDGET_IDS = { gradient: 'calc-step', handwired: 'calc-wired', lora: 'calc-lora', memory: 'calc-mem', quiz: 'quizForm' };
+for (const [n, id] of Object.entries(WIDGET_IDS)) ok(!md.includes(`widget:${n}`) || html.includes(`id="${id}"`), `widget ${n} not rendered`);
 ok(!/<(?:script|img|iframe)\b[^>]*\bsrc\s*=\s*["']https?:/i.test(html), 'external script/img');
 ok(!/<link\b[^>]*\bhref\s*=\s*["']https?:/i.test(html), 'external stylesheet');
 ok(!/\b(fetch|XMLHttpRequest|WebSocket|sendBeacon)\s*\(/.test(script), 'network API in script');

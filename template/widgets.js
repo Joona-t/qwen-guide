@@ -6,7 +6,13 @@
   var weights = function(b,bits){ return {gb:b*bits/8, gib:b*1e9*bits/8/Math.pow(2,30)}; };
   var clamp = function(v,lo,hi,fb){ var n=Number(v); return isFinite(n)&&n>=lo&&n<=hi ? n : fb; };
   var QUIZ = ['b','b','a','b'];
-  window.FineTuneMath = Object.freeze({sigmoid:sigmoid, loss:loss, adapter:adapter, weights:weights, QUIZ:QUIZ});
+  /* handwired: the program `a > 4 ? 10 : 12` and its exact rewrite as weights + ReLU (after chenglou/handwired, MIT) */
+  var relu = function(x){ return Math.max(0,x); };
+  var wiredProgram = function(a){ return a>4 ? 10 : 12; };
+  var wiredGate = function(a){ return relu(a-4) - relu(a-5); };
+  var wiredNetwork = function(a){ var g=wiredGate(a); return g*10 + (1-g)*12; };
+  window.FineTuneMath = Object.freeze({sigmoid:sigmoid, loss:loss, adapter:adapter, weights:weights, QUIZ:QUIZ,
+    relu:relu, wiredProgram:wiredProgram, wiredGate:wiredGate, wiredNetwork:wiredNetwork});
 
   if($('calc-step')){
     var w=-2, steps=0, hist=[];
@@ -30,6 +36,20 @@
     $('stepReset').addEventListener('click', reset);
     $('target').addEventListener('change', reset);
     reset();
+  }
+
+  if($('calc-wired')){
+    var fmt = function(x){ return Number.isInteger(x) ? String(x) : x.toFixed(2); };
+    var updWired = function(){
+      var a=clamp($('wiredA').value,0,10,4), p=wiredProgram(a), g=wiredGate(a), n=wiredNetwork(a);
+      $('wiredAOut').textContent=$('wiredA1').textContent=$('wiredA2').textContent=fmt(a);
+      $('wiredGate').textContent=fmt(g); $('wiredProg').textContent=fmt(p); $('wiredNet').textContent=fmt(n);
+      $('wiredNote').textContent = p===n
+        ? 'Both say '+fmt(p)+'. The constants 4, 5, 10 and 12 are the weights; nothing was trained.'
+        : 'They differ: program '+fmt(p)+', network '+fmt(n)+'. Between 4 and 5 the gate is '+fmt(g)+', not 0 or 1, so the rewrite is exact everywhere except on this ramp.';
+    };
+    $('wiredA').addEventListener('input',updWired); $('wiredA').addEventListener('change',updWired);
+    updWired();
   }
 
   if($('calc-lora')){

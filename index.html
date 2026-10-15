@@ -259,6 +259,17 @@ td:first-child { font-weight: 600; white-space: nowrap; }
   min-height: 44px; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 0; background: var(--paper);
   font: 500 15px/1.2 var(--ui); color: var(--ink);
 }
+.field--range { flex: 1 1 100%; }
+.field input[type="range"] { width: 100%; min-height: 44px; margin: 0; accent-color: var(--accent); background: transparent; }
+.field--range label span { font-family: var(--mono); font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--ink); }
+.wired { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+.wired__col { min-width: 0; padding: 14px 16px 12px; border: 1px solid var(--line); background: var(--paper); }
+.wired__tag { margin: 0 0 8px; font-family: var(--ui); line-height: 1.6; font-size: 10.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.wired__code { margin: 0 0 12px; font-family: var(--mono); font-size: 12.5px; line-height: 1.7; color: var(--ink-soft); white-space: pre-wrap; overflow-wrap: anywhere; }
+.wired__code span { color: var(--accent); }
+.wired__code .wired__eq { color: var(--muted); }
+.wired__code .wired__eq span { color: var(--accent); }
+.metrics.metrics--1 { grid-template-columns: minmax(0, 1fr); }
 .calc__out { margin-top: 18px; padding: 16px 0 4px; border-top: 1px solid var(--line-strong); }
 .bignum { font-family: var(--display); font-size: 40px; line-height: 1.05; letter-spacing: -.02em; color: var(--ink); }
 .bignum small { font-family: var(--ui); font-size: 13px; letter-spacing: .04em; color: var(--muted); }
@@ -545,6 +556,34 @@ launchctl setenv OLLAMA_KEEP_ALIVE 5m          # unload after five idle minutes<
       <p>There are four ways to change how a local model behaves. Only one of them touches the weights:</p>
       <div class="tablewrap"><table><thead><tr><th>Method</th><th>What changes</th><th>Reach for it when</th></tr></thead><tbody><tr><td>Prompt / few-shot examples</td><td>Instructions read at inference time</td><td>Always first. It's free and instant to undo.</td></tr><tr><td>Retrieval (RAG)</td><td>Relevant documents placed in context</td><td>The model lacks <em>facts</em>: your notes, docs, codebase.</td></tr><tr><td>Better tools / validators</td><td>Code that runs and checks the output</td><td>The output must be <em>correct</em>, not just likely.</td></tr><tr><td>Fine-tuning</td><td>The model's weights (or an adapter)</td><td>The model has the facts but keeps answering in the wrong <em>shape</em>.</td></tr></tbody></table></div>
       <div class="callout callout--gotcha"><div class="ctag">Fine-tuning doesn't add reliable facts</div><p>It makes patterns more likely. A model trained on your docs will sound like your docs and still invent details. For knowledge, use retrieval. For correctness, use a validator. Fine-tune for behaviour.</p></div>
+      <p>Why can a pile of numbers hold behaviour at all? Because a program built from comparisons and arithmetic can be rewritten as multiplies, adds and ReLU, the same operations a network layer performs. Cheng Lou's <a href="https://github.com/chenglou/handwired" rel="noopener">handwired</a> (MIT) does this by hand for ordinary JavaScript; its <a href="https://chenglou.me/handwired/" rel="noopener">live demo</a> goes much further. The toy below takes its first example: nothing here is Qwen, but the point carries over.</p>
+      <div class="calc" id="calc-wired">
+  <h3>A program, written as weights</h3>
+  <p class="csub">Left, a one-line program. Right, the same program rewritten as multiplies, adds and <code>relu(x) = max(0, x)</code>, the operations a network layer performs. Move <code>a</code> and watch both compute.</p>
+  <div class="calc__row">
+    <div class="field field--range"><label for="wiredA">Input a = <span id="wiredAOut">4</span></label><input type="range" id="wiredA" min="0" max="10" step="0.25" value="4" aria-describedby="wiredNote"></div>
+  </div>
+  <div class="calc__out" aria-live="polite">
+  <div class="wired">
+    <div class="wired__col">
+      <div class="wired__tag">Program</div>
+      <pre class="wired__code">a = <span id="wiredA1">4</span>
+result = a &gt; 4 ? 10 : 12</pre>
+      <div class="metrics metrics--1"><div><span>Program says</span><b id="wiredProg">12</b></div></div>
+    </div>
+    <div class="wired__col">
+      <div class="wired__tag">Weights + ReLU</div>
+      <pre class="wired__code">a = <span id="wiredA2">4</span>
+above4 = relu(a − 4) − relu(a − 5)
+<span class="wired__eq">       = <span id="wiredGate">0</span></span>
+result = above4·10 + (1 − above4)·12</pre>
+      <div class="metrics metrics--1"><div><span>Network says</span><b id="wiredNet">12</b></div></div>
+    </div>
+  </div>
+  <div class="outline" id="wiredNote">Both say 12. The constants 4, 5, 10 and 12 are the weights; nothing was trained.</div>
+  </div>
+  <p class="calc__caveat"><strong>A program can be written as weights.</strong> That is why a trained network can also hold one: the numbers fine-tuning nudges are the same kind of object as these constants. <strong>Exact everywhere except between 4 and 5.</strong> There the gate ramps from 0 to 1 instead of jumping, so a = 4.5 gives 11 where the program gives 10. Adapted from Cheng Lou's <a href="https://github.com/chenglou/handwired" rel="noopener">handwired</a> (MIT), rewritten here by hand.</p>
+</div>
     </section>
 
     <section id="step">
@@ -979,7 +1018,13 @@ ollama run huihui_ai/qwen3.5-abliterated:9b    # 6.6 GB</pre></div>
   var weights = function(b,bits){ return {gb:b*bits/8, gib:b*1e9*bits/8/Math.pow(2,30)}; };
   var clamp = function(v,lo,hi,fb){ var n=Number(v); return isFinite(n)&&n>=lo&&n<=hi ? n : fb; };
   var QUIZ = ['b','b','a','b'];
-  window.FineTuneMath = Object.freeze({sigmoid:sigmoid, loss:loss, adapter:adapter, weights:weights, QUIZ:QUIZ});
+  /* handwired: the program `a > 4 ? 10 : 12` and its exact rewrite as weights + ReLU (after chenglou/handwired, MIT) */
+  var relu = function(x){ return Math.max(0,x); };
+  var wiredProgram = function(a){ return a>4 ? 10 : 12; };
+  var wiredGate = function(a){ return relu(a-4) - relu(a-5); };
+  var wiredNetwork = function(a){ var g=wiredGate(a); return g*10 + (1-g)*12; };
+  window.FineTuneMath = Object.freeze({sigmoid:sigmoid, loss:loss, adapter:adapter, weights:weights, QUIZ:QUIZ,
+    relu:relu, wiredProgram:wiredProgram, wiredGate:wiredGate, wiredNetwork:wiredNetwork});
 
   if($('calc-step')){
     var w=-2, steps=0, hist=[];
@@ -1003,6 +1048,20 @@ ollama run huihui_ai/qwen3.5-abliterated:9b    # 6.6 GB</pre></div>
     $('stepReset').addEventListener('click', reset);
     $('target').addEventListener('change', reset);
     reset();
+  }
+
+  if($('calc-wired')){
+    var fmt = function(x){ return Number.isInteger(x) ? String(x) : x.toFixed(2); };
+    var updWired = function(){
+      var a=clamp($('wiredA').value,0,10,4), p=wiredProgram(a), g=wiredGate(a), n=wiredNetwork(a);
+      $('wiredAOut').textContent=$('wiredA1').textContent=$('wiredA2').textContent=fmt(a);
+      $('wiredGate').textContent=fmt(g); $('wiredProg').textContent=fmt(p); $('wiredNet').textContent=fmt(n);
+      $('wiredNote').textContent = p===n
+        ? 'Both say '+fmt(p)+'. The constants 4, 5, 10 and 12 are the weights; nothing was trained.'
+        : 'They differ: program '+fmt(p)+', network '+fmt(n)+'. Between 4 and 5 the gate is '+fmt(g)+', not 0 or 1, so the rewrite is exact everywhere except on this ramp.';
+    };
+    $('wiredA').addEventListener('input',updWired); $('wiredA').addEventListener('change',updWired);
+    updWired();
   }
 
   if($('calc-lora')){

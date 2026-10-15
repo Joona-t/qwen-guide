@@ -1,0 +1,27 @@
+<div class="calc" id="calc-wired">
+  <h3>A program, written as weights</h3>
+  <p class="csub">Left, a one-line program. Right, the same program rewritten as multiplies, adds and <code>relu(x) = max(0, x)</code>, the operations a network layer performs. Move <code>a</code> and watch both compute.</p>
+  <div class="calc__row">
+    <div class="field field--range"><label for="wiredA">Input a = <span id="wiredAOut">4</span></label><input type="range" id="wiredA" min="0" max="10" step="0.25" value="4" aria-describedby="wiredNote"></div>
+  </div>
+  <div class="calc__out" aria-live="polite">
+  <div class="wired">
+    <div class="wired__col">
+      <div class="wired__tag">Program</div>
+      <pre class="wired__code">a = <span id="wiredA1">4</span>
+result = a &gt; 4 ? 10 : 12</pre>
+      <div class="metrics metrics--1"><div><span>Program says</span><b id="wiredProg">12</b></div></div>
+    </div>
+    <div class="wired__col">
+      <div class="wired__tag">Weights + ReLU</div>
+      <pre class="wired__code">a = <span id="wiredA2">4</span>
+above4 = relu(a − 4) − relu(a − 5)
+<span class="wired__eq">       = <span id="wiredGate">0</span></span>
+result = above4·10 + (1 − above4)·12</pre>
+      <div class="metrics metrics--1"><div><span>Network says</span><b id="wiredNet">12</b></div></div>
+    </div>
+  </div>
+  <div class="outline" id="wiredNote">Both say 12. The constants 4, 5, 10 and 12 are the weights; nothing was trained.</div>
+  </div>
+  <p class="calc__caveat"><strong>A program can be written as weights.</strong> That is why a trained network can also hold one: the numbers fine-tuning nudges are the same kind of object as these constants. <strong>Exact everywhere except between 4 and 5.</strong> There the gate ramps from 0 to 1 instead of jumping, so a = 4.5 gives 11 where the program gives 10. Adapted from Cheng Lou's <a href="https://github.com/chenglou/handwired" rel="noopener">handwired</a> (MIT), rewritten here by hand.</p>
+</div>

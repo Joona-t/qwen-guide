@@ -297,6 +297,10 @@ There are four ways to change how a local model behaves. Only one of them touche
 
 > ⚠ **Fine-tuning doesn't add reliable facts.** It makes patterns more likely. A model trained on your docs will sound like your docs and still invent details. For knowledge, use retrieval. For correctness, use a validator. Fine-tune for behaviour.
 
+Why can a pile of numbers hold behaviour at all? Because a program built from comparisons and arithmetic can be rewritten as multiplies, adds and ReLU, the same operations a network layer performs. Cheng Lou's [handwired](https://github.com/chenglou/handwired) (MIT) does this by hand for ordinary JavaScript; its [live demo](https://chenglou.me/handwired/) goes much further. The toy below takes its first example: nothing here is Qwen, but the point carries over.
+
+<!-- widget:handwired -->
+
 <!-- section id="step" toc="One learning step" kicker="Part 2 · Follow the numbers" -->
 ## One learning step, made visible
 
