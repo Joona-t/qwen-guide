@@ -2,6 +2,15 @@
 
 Newest first.
 
+## ITER-005 — "Expand table" control on wide tables (2026-10-15)
+- **What:** tables with five or more columns get an Expand/Collapse button. Expanded, the table breaks out of the
+  700px reading column: rightwards to the page gutter when the contents rail is visible, centred to the full width
+  when it isn't. The button is hidden under 1080px, where the table already spans the column and scrolls.
+- **BUG-005:** the first CSS-only version overlapped the sticky contents rail and ran 59px past the right edge
+  (measured). Fixed by sizing in script from the column's measured left edge, re-run on resize.
+- **Verified:** expanded table clears the rail and stays inside the gutter at 1400px; collapse restores the column
+  width; `verify.mjs` PASS.
+
 ## ITER-004 — Landscape rebuilt from an adversarially verified Oct 2026 survey (2026-10-15)
 - **Why:** the owner flagged that "The local landscape" omitted the current frontier (GLM-5.3, Kimi K3) and carried
   stale facts, which undermines the guide as a source. A 12-agent workflow (5 web scouts by lab group, 1 stale-claim

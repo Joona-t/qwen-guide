@@ -62,7 +62,9 @@ def blocks(lines):
                 rows.append([c.strip() for c in lines[i].strip().strip("|").split("|")]); i += 1
             th = "".join(f"<th>{inline(c)}</th>" for c in rows[0])
             tb = "".join("<tr>" + "".join(f"<td>{inline(c)}</td>" for c in r) + "</tr>" for r in rows[2:])
-            out.append(f'<div class="tablewrap"><table><thead><tr>{th}</tr></thead><tbody>{tb}</tbody></table></div>'); continue
+            wide = len(rows[0]) >= 5
+            btn = '<button type="button" class="tbl-expand" aria-expanded="false">Expand table</button>' if wide else ''
+            out.append(f'<div class="tablewrap{" tablewrap--wide" if wide else ""}">{btn}<table><thead><tr>{th}</tr></thead><tbody>{tb}</tbody></table></div>'); continue
         lm = re.match(r"^(- |\d+\. )", l)
         if lm:
             ordered = lm.group(1) != "- "

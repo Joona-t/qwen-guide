@@ -191,6 +191,16 @@ main a { color: var(--accent); }
 
 /* tables */
 .tablewrap { overflow-x: auto; margin: 22px 0 30px; border-top: 1px solid var(--line-strong); }
+.tablewrap--wide { position: relative; padding-top: 36px; }
+.tbl-expand {
+  position: absolute; top: 4px; right: 0; min-height: 30px; padding: 0 12px; cursor: pointer;
+  background: var(--paper); border: 1px solid var(--line-strong); font: 600 11px/1 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.tbl-expand:hover { color: var(--accent); border-color: var(--accent); }
+.tablewrap--wide.expanded { max-width: none; overflow-x: auto; position: relative; z-index: 2; background: var(--paper); }
+.tablewrap--wide.expanded table { min-width: 0; width: 100%; }
+.tablewrap--wide.expanded td:last-child { min-width: 0; }
+.tablewrap--wide.expanded td:first-child { white-space: normal; }
 table { width: 100%; border-collapse: collapse; font-family: var(--ui); font-size: 14px; line-height: 1.45; }
 table:has(thead th:nth-child(5)) { min-width: 860px; }   /* 5+ columns: scroll inside .tablewrap rather than crush the notes column */
 table:has(thead th:nth-child(6)) { min-width: 1040px; }
@@ -267,6 +277,7 @@ footer { border-top: 1px solid var(--line); }
 
 /* ---------- responsive ---------- */
 @media (max-width: 1080px) {
+  .tbl-expand { display: none; }
   .layout { grid-template-columns: minmax(0, var(--col)); }
   .toc { display: none; }
   .toc-mobile { display: block; margin: 28px 0 0; border: 1px solid var(--line); background: var(--paper-deep); }

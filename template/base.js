@@ -72,3 +72,24 @@
     }, { passive: true });
   }
 
+  /* ---- Expand wide tables beyond the reading column ---- */
+  var expanded = [];
+  function sizeExpanded(wrap){
+    wrap.style.width = ''; wrap.style.marginLeft = '';
+    var g = Math.max(16, innerWidth * 0.055), left = wrap.getBoundingClientRect().left;
+    var toc = document.querySelector('.toc'), railVisible = toc && getComputedStyle(toc).display !== 'none';
+    if(railVisible){ wrap.style.width = Math.max(wrap.clientWidth, innerWidth - g - left) + 'px'; }
+    else { wrap.style.width = (innerWidth - 2 * g) + 'px'; wrap.style.marginLeft = (g - left) + 'px'; }
+  }
+  document.querySelectorAll('.tbl-expand').forEach(function(b){
+    var wrap = b.closest('.tablewrap');
+    b.addEventListener('click', function(){
+      var on = wrap.classList.toggle('expanded');
+      b.setAttribute('aria-expanded', on ? 'true' : 'false');
+      b.textContent = on ? 'Collapse table' : 'Expand table';
+      if(on){ expanded.push(wrap); sizeExpanded(wrap); if(wrap.getBoundingClientRect().top < 0) wrap.scrollIntoView({ block: 'start' }); }
+      else { expanded = expanded.filter(function(w){ return w !== wrap; }); wrap.style.width = ''; wrap.style.marginLeft = ''; }
+    });
+  });
+  window.addEventListener('resize', function(){ expanded.forEach(sizeExpanded); });
+
