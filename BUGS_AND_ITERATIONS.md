@@ -2,6 +2,32 @@
 
 Newest first.
 
+## ITER-004 — Landscape rebuilt from an adversarially verified Oct 2026 survey (2026-10-15)
+- **Why:** the owner flagged that "The local landscape" omitted the current frontier (GLM-5.3, Kimi K3) and carried
+  stale facts, which undermines the guide as a source. A 12-agent workflow (5 web scouts by lab group, 1 stale-claim
+  auditor over the whole source, 5 adversarial skeptics, 1 synthesizer; 130 claims verified, 33 refuted, 53
+  downgraded) surveyed the open-weight landscape; the ten load-bearing surprises were then re-checked by hand on
+  primary pages (Google's Gemma 4 model card, Meta's Muse Glimmer card, Apple's Mac mini specs, Liquid's LFM2.5 card,
+  DeepSeek-V4.1-Flash and GLM-5.3 and Kimi K3 cards, Mistral's Large 4 post, Ollama tag pages).
+- **BUG-002 — Gemma 4 license was wrong.** The table said "Gemma terms of use"; Google's model card says Apache 2.0.
+- **BUG-003 — Llama row was obsolete.** Meta's current open model is Muse Glimmer 30B (Aug 2026, Apache-2.0); no Llama
+  has shipped since Llama 4 (Apr 2025).
+- **BUG-004 — Bandwidth example named the wrong current Mac.** The base Mac mini is now M6 at 153 GB/s (170 at 24/32
+  GB); the M4 figure is kept as the 2024 example.
+- **Landscape section rewritten as two tables:** "Fits a laptop" (14 rows, 4-bit sizes from Ollama/official GGUFs)
+  and "The open-weight frontier" (12 rows incl. Kimi K3 2.8T, Qwen3.8-2.4T, DeepSeek-V4.1-Flash, GLM-5.3 and
+  5.3-Flash, Mistral Large 4 as announced-not-open, MiniMax-M3, gpt-oss-120b, Llama 4, Nemotron 3 Ultra, Mistral
+  Small 4, Qwen3-Coder-Next), plus "why the frontier matters" and a dated watch list of unverified items.
+- **Other fixes:** Qwen3.8-27B named as the 24 GB pick; Qwen3.8 line licenses spelled out; Ollama MLX timeline
+  (v0.19 preview → v0.40.0 default, no memory floor in the release notes); thinking-default caveat (chat templates vs
+  Unsloth's page disagree); mlx-lm `--adapter-path` regression cited to issue #1248; OBLITERATUS wording softened;
+  caveats now date the snapshot.
+- **Not adopted from the synthesis:** its proposal to say all Qwen3.5 sizes are non-thinking by default (the chat
+  templates, verified earlier, say 4B/9B think by default); its "no evidence" verdict on the mlx-lm regression (the
+  issue exists). Secondary-only claims (Qwen4 "in training", Nemotron 3.5 Bolt, Mellum2.1 benchmarks) went to the
+  watch list, not the tables.
+- **Verified:** `verify.mjs` PASS (125 checks); tables render and scroll inside their wrapper at 360px.
+
 ## ITER-003 — One guide in three parts: run, fine-tune, abliteration (2026-10-15)
 - **Why:** the owner wanted one complete local-Qwen guide, not a fine-tuning guide with pointers elsewhere: set up
   first, then fine-tune, then abliteration, each with learning resources, plus responsibility and safety; and a

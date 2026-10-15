@@ -26,7 +26,7 @@ Three facts decide almost everything about running one well:
 
 **Memory sets the ceiling.** The whole model has to be in memory while it runs. The size on disk is roughly `parameters × bits ÷ 8`: a 4B model at 16-bit is about 9 GB; at 4-bit, about 2.5 GB. Add a gigabyte or two for the working memory that grows with the length of the conversation (the KV cache).
 
-**Memory bandwidth sets the speed.** For every generated token, the program reads the entire model from memory. So tokens per second is roughly memory bandwidth divided by model size. A base Mac mini M4 reads about 120 GB/s; a 6.6 GB model therefore tops out near 18 tokens per second, and real runs land a bit below that. A discrete GPU is several times faster because its memory is.
+**Memory bandwidth sets the speed.** For every generated token, the program reads the entire model from memory. So tokens per second is roughly memory bandwidth divided by model size. A Mac mini with the M4 chip (2024) reads about 120 GB/s, so a 6.6 GB model tops out near 18 tokens per second there; the current base Mac mini (M6) reads 153 GB/s, which lifts that ceiling to about 23. Real runs land a bit below either figure. A discrete GPU is several times faster because its memory is.
 
 **Quantization is what makes it fit.** Models are trained in 16-bit. Storing the weights in 4-bit cuts the file to about a quarter with a small quality loss. `Q4_K_M` is the common default. Sizes like `Q8_0` keep more quality at twice the size. Below 4-bit, quality drops quickly. A smaller model at 4-bit is almost always better than a bigger model crushed to 2-bit.
 
@@ -55,19 +55,49 @@ Many good setups use both: a local model for the private, repetitive and fast wo
 
 ### The local landscape, October 2026
 
-Qwen is one family among several. The honest short version:
+Qwen is one family among many, and "open weights" no longer means "runs on your laptop." The smallest current GLM-5.x is 320B parameters; Kimi K3 is 2.8 trillion. So this section is two tables: what fits a laptop, and the open-weight frontier you reach through an API. Every row was checked against the publisher's model card or Ollama's library page on **2026-10-15**. The sizes are 4-bit downloads as Ollama or the official GGUF repo lists them.
 
-| Family | Publisher | Small sizes that fit a laptop | License | Notes |
-|---|---|---|---|---|
-| **Qwen3.5** | Alibaba | 0.8B, 2B, 4B, 9B | Apache-2.0 | Strong multilingual (200+ languages), text + image input, 256K context, best small tool-caller. This guide's pick. |
-| **Gemma 4** | Google | 12B at ~7.7–8 GB (4-bit); smaller "e4b" | Gemma terms of use | Quantization-aware checkpoints hold quality well at 4-bit. Native function calling. |
-| **gpt-oss-20b** | OpenAI | 21B total, 3.6B active; ~14 GB | Apache-2.0 | A reasoning model with adjustable effort. Fits 16 GB only on its own. |
-| **Ministral 3** | Mistral | 8B | Apache-2.0 | Token-efficient, 256K context, image understanding. A direct rival to Qwen3.5-9B. |
-| **Granite 4.x** | IBM | 3B, 8B | Apache-2.0 | Built for tool use and retrieval; small and well-behaved. |
-| **Llama** | Meta | varies by generation | Llama community license | The family with the largest ecosystem of tools and fine-tunes. Check the license terms for your use. |
-| **Qwen2.5-Coder** | Alibaba | 7B, 14B | Apache-2.0 | Older, but fill-in-the-middle makes it the best local editor autocomplete. |
+**Fits a laptop** (16 GB with headroom, or 24 GB):
 
-There are also strong families from DeepSeek, Microsoft (Phi) and others, and new releases arrive monthly. Treat any table like this one, including this one, as a snapshot.
+| Family | Publisher | Laptop sizes (4-bit) | License | Released | Notes |
+|---|---|---|---|---|---|
+| **Qwen3.5** 0.8B / 2B / 4B / 9B | Alibaba | 1.2 / 2.7 / 3.3 / 6.6 GB; 27B at 17 GB needs 24 GB | Apache-2.0 | Feb–Mar 2026 | 200+ languages, text + image input, 256K context, best small tool-caller. This guide's pick for 16 GB. |
+| **Qwen3.8-27B** | Alibaba | 18 GB, 24 GB machines only | Apache-2.0 | Aug 2026 | The newest Qwen that fits anything portable: dense, text + image, 256K. Supersedes Qwen3.5-27B and Qwen3.6-27B (17 GB) on a 24 GB machine. |
+| **Gemma 4** E2B / E4B / 12B / 26B-A4B / 31B | Google | 4.3–4.6 / 6.1–6.6 / 7.2–8.0 GB; 26B-A4B and 31B at 16–20 GB need 24 GB | Apache-2.0 | Mar–Jun 2026 | E2B, E4B and the 12B take text, image *and audio*; 26B-A4B and 31B are text + image. 128K context on the small ones, 256K above. Quantization-aware checkpoints hold quality at 4-bit. |
+| **gpt-oss-20b** | OpenAI | 14 GB; tight on 16 GB, fine on 24 GB | Apache-2.0 | Aug 2025 | 21B total, 3.6B active, adjustable reasoning effort, text only, 128K. Still OpenAI's only laptop-size open model; no successor as of Oct 2026. |
+| **Ministral 3** 3B / 8B / 14B | Mistral | 3.0 / 6.0 / 9.1 GB | Apache-2.0 | Dec 2025 | Base, Instruct and Reasoning at each size, 256K, text + image, function calling. Mistral's 2026 open releases (Small 4 at 119B, Medium 3.5 at 128B) are too large for a laptop, so this is still its laptop line. |
+| **Muse Glimmer 30B** | Meta | 18 GB, 24 GB machines only | Apache-2.0 | Aug 2026 | Meta's current open model, distilled from its closed Muse Spark; ~29.6B dense, text + image, 131K. Meta has shipped no Llama since Llama 4 (Apr 2025), whose smallest member is 67 GB at 4-bit. |
+| **Granite 4.2** 3B / 8B / 30B | IBM | 2.2 / 5.3 GB; 30B at 17–18 GB needs 24 GB | Apache-2.0 | Aug 2026 | Dense reasoning family with thinking and non-thinking modes, 128K native, tool calling. Built for retrieval and tool use; small and well-behaved. |
+| **LFM2.5** 8B-A1B / 24B-A2B | Liquid AI | 5.2 GB; 24B-A2B at 15 GB needs 24 GB | LFM Open License 1.0 (custom) | May–Oct 2026 | Sparse mixture-of-experts built for speed on CPUs and laptops (1.5B and 2.45B active), 128K, text only. The 24B-A2B shipped 2026-10-12, the newest laptop-class model in this table. |
+| **Nemotron 3 Nano 4B** | NVIDIA | 2.8 GB | NVIDIA Nemotron Open Model License | Mar 2026 | 256K context, tool calling. The 30B-A3B sibling is 24 GB at 4-bit and needs a 32 GB machine. Licenses differ across the Nemotron line, so read each card. |
+| **Phi-4** mini 3.8B / 14B / reasoning-vision 15B | Microsoft | 2.5 / 9.1 GB; vision model ~10 GB + projector | MIT | Dec 2024 – Mar 2026 | The reasoning-vision 15B (Mar 2026, 16K context) is the newest Phi; there is no Phi-5 as of Oct 2026. |
+| **GLM-4.7-Flash** 30B-A3B | Z.ai (Zhipu) | 19 GB, 24 GB machines only | MIT | Jan 2026 | The only GLM with a local Ollama tag; 198K context, text, tools and thinking. Everything in the GLM-5.x line is far too large (see below). |
+| **DeepSeek-R1-0528-Qwen3-8B** | DeepSeek | 5.2 GB | MIT | May 2025 | The only DeepSeek-branded model that fits a laptop: R1 reasoning distilled onto Qwen3-8B, text only, 128K. Every DeepSeek V4-generation model is 284B or larger. |
+| **Qwen2.5-Coder** 7B / 14B, **Qwen3-Coder-30B-A3B** | Alibaba | 4.7 / 9.0 GB; 30B-A3B at 19 GB needs 24 GB | Apache-2.0 | Nov 2024 / Jul 2025 | Both document fill-in-the-middle, which newer agentic coders (Qwen3.8-27B, Granite 4.2, Devstral Small 2) don't, so they remain the editor-autocomplete picks. |
+| **SmolLM3-3B** | Hugging Face | 1.9 GB (GGUF from ggml-org; not in Ollama's library) | Apache-2.0 | Jul 2025 | Fully open training recipe, 128K, strong tool calling for its size. A reference model rather than a daily driver. |
+
+**The open-weight frontier** (you can download these, but you run them through an API or a datacenter):
+
+| Model | Publisher | Size | License | Released | Why a laptop user should know it |
+|---|---|---|---|---|---|
+| **Kimi K3** | Moonshot AI | 2.8T total, 104B active, 896 experts | Kimi K3 License (custom, MIT-derived) | Jul 2026 | The largest open-weight model that exists: 1M context, text + image. About 1.5 TB at 4-bit. Shows what "frontier" means now. |
+| **Qwen3.8-2.4T-A95B** | Alibaba | 2.4T total, 95B active | Qwen3.8-Max License (custom) | Aug 2026 | The open checkpoint of hosted Qwen3.8-Max, text only, thinking always on. Same generation as the laptop-size Qwen3.8-27B. |
+| **DeepSeek-V4.1-Flash** | DeepSeek | 552B backbone, 8B/16B active | MIT | Sep 2026 | DeepSeek's current release: text + image, 1M context. The model its API now serves for everything. |
+| **GLM-5.3** | Z.ai (Zhipu) | 753B (about 40B active, per the GitHub README) | GLM-5.3 License (custom) | Aug 2026 | Z.ai's flagship coding and agent model, text only, 1M context. The first GLM to leave the MIT license. |
+| **GLM-5.3-Flash** | Z.ai (Zhipu) | 320B total, 18B active | MIT | Aug 2026 | Natively multimodal. "Flash" no longer means laptop-class: about 200 GB at 4-bit. |
+| **Mistral Large 4** | Mistral | 1T total, 52B active | not stated | Oct 2026 | Announced 2026-10-06 with weights promised "by the end of the month." Not open as of 2026-10-15. Mistral Large 3 (675B, Apache-2.0, Dec 2025) is the current download. |
+| **MiniMax-M3** | MiniMax | ~428B total, ~23B active | MiniMax Community License (custom; restrictions on commercial use) | Jun 2026 | Natively multimodal, 1M context. Its license is stricter than the earlier M2 line's. |
+| **gpt-oss-120b** | OpenAI | 117B total, 5.1B active | Apache-2.0 | Aug 2025 | 65 GB at 4-bit: a 64 GB-plus Mac or an 80 GB GPU. The big sibling of the laptop-size 20B. |
+| **Llama 4** Scout / Maverick | Meta | 109B / 400B total, 17B active | Llama 4 Community License | Apr 2025 | Still the newest Llama. Scout is 67 GB at 4-bit. Useful mainly as the anchor for Llama-format tooling. |
+| **Nemotron 3 Ultra** | NVIDIA | 550B total, 55B active | OpenMDW 1.1 | Jun 2026 | NVIDIA's frontier open model with open data and recipes. Its license differs from the Nano line. |
+| **Mistral Small 4** | Mistral | 119B total, 6.5B active | Apache-2.0 | Mar 2026 | Despite "Small," about 58–74 GB at 4-bit. Merges Mistral's reasoning, vision and coding lines. |
+| **Qwen3-Coder-Next** | Alibaba | 80B total, 3B active | Apache-2.0 | Feb 2026 | Fill-in-the-middle agentic coder at 52 GB: runs on a 64 GB desktop or Mac Studio, not a laptop. |
+
+**Why the frontier matters even if you can't run it.** Three reasons. The frontier models are the API fallback for the hard calls a local model can't make. Their labs often ship a small sibling trained the same way (Qwen3.8-27B next to the 2.4T, Gemma 4 E2B next to the 31B). And their licenses are drifting away from MIT and Apache toward custom terms with revenue clauses, which matters the moment you build something on one.
+
+> 📝 **Watch list, unverified on 2026-10-15.** Qwen4 is described as "in training" in secondary reports, with no date. NVIDIA announced a Nemotron 3.5 Bolt 74B-A9B for mid-October. JetBrains published Mellum2.1, a 12B-A2.5B coding model, on 2026-10-07 with an official GGUF at 7–8 GB; its benchmark numbers are self-reported. Treat all three as leads until their model cards exist and you've read them.
+
+There are more families than this, and new releases arrive weekly. Treat any table like this one, including this one, as a dated snapshot, and read the model card before you commit to a family.
 
 ### How to choose
 
@@ -83,7 +113,7 @@ There are also strong families from DeepSeek, Microsoft (Phi) and others, and ne
 <!-- section id="models" toc="Which Qwen" kicker="Part 1 · Run Qwen locally" -->
 ## Which Qwen?
 
-Qwen is Alibaba's family of open-weight models. The useful line for a personal machine in October 2026 is **Qwen3.5**, released in February and March 2026. Its small models are **0.8B, 2B, 4B and 9B**. All are Apache-2.0 licensed, take text and images as input, and have a 256K-token context window. Newer lines (Qwen3.6, Qwen3.8) only ship at 27B and larger, so Qwen3.5 is still the right pick for anything with less than about 24 GB of memory.
+Qwen is Alibaba's family of open-weight models. The useful line for a personal machine in October 2026 is **Qwen3.5**, released in February and March 2026. Its small models are **0.8B, 2B, 4B and 9B**. All are Apache-2.0 licensed, take text and images as input, and have a 256K-token context window. Newer lines (Qwen3.6, Qwen3.8) only ship at 27B and larger, so Qwen3.5 is still the right pick for a 16 GB machine. On a 24 GB machine, Qwen3.8-27B (18 GB at 4-bit) is the newer choice.
 
 | Model | 4-bit size on Ollama | Fits comfortably in | Good for |
 |---|---|---|---|
@@ -91,13 +121,13 @@ Qwen is Alibaba's family of open-weight models. The useful line for a personal m
 | Qwen3.5-2B | 2.7–3.1 GB | 8 GB | fast extraction and summaries; first fine-tuning experiments |
 | Qwen3.5-4B | 3.3–4.0 GB | 8 GB, with headroom at 16 GB | the everyday local assistant; strong on structured output |
 | Qwen3.5-9B | 6.6–7.6 GB | 16 GB | the quality pick; best local tool-calling at this size |
-| Qwen3.5-27B | 17–20 GB | 32 GB | when you have the memory; dense, not mixture-of-experts |
+| Qwen3.5-27B | 17–20 GB | 24 GB | dense, not mixture-of-experts; on a 24 GB machine prefer Qwen3.8-27B (18 GB, Aug 2026) |
 
 The sizes are what Ollama downloads for its default tags, which include the vision encoder. Larger Qwen3.5 models (35B-A3B, 122B-A10B, 397B-A17B) are mixture-of-experts and need workstation memory.
 
 **Pick by task, not by ego.** Run your real prompts through the 4B first. If it does the job, you've saved memory for context and other programs. Move to the 9B when answers need more reasoning or when tool-calling has to be reliable. Tool-calling reliability drops sharply below 9B: on the BFCL benchmark the 9B scores about 66, the 4B about 50, the 2B about 44.
 
-> ⚠ **The 4B and 9B think by default.** They write a `<think>` block before answering. That's good for hard questions and slow for everything else. Only the 0.8B and 2B default to non-thinking. Section "Thinking mode" below shows how to switch it.
+> ⚠ **The 4B and 9B think by default.** They write a `<think>` block before answering. That's good for hard questions and slow for everything else. Only the 0.8B and 2B default to non-thinking. That's what the models' own chat templates do; Unsloth's Qwen3.5 page describes all four as reasoning-off by default, so check the `think` setting on your runtime rather than assuming. Section "Thinking mode" below shows how to switch it.
 
 **Other Qwen models you'll see.** `Qwen2.5-Coder` (7B, 14B, 32B) is older but still the best Qwen for editor autocomplete, since it supports fill-in-the-middle. `Qwen3-VL` is a vision line. `Qwen3-Embedding-0.6B` and `Qwen3-Reranker` are for search and retrieval. `Qwen3Guard` is a safety classifier. None of these are needed to get started.
 
@@ -140,12 +170,12 @@ ollama run hf.co/unsloth/Qwen3.5-4B-GGUF:Q4_K_M
 ```
 The part after the colon picks the quantization file from the repo; without it Ollama takes `Q4_K_M` when the repo has one. Each GGUF model page on the Hub also offers an "Use this model → Ollama" menu that writes the command for you. This is handy for community builds that aren't in Ollama's own library, including fine-tuned and abliterated variants, and it's exactly where the trust question above matters most.
 
-**Licenses.** Qwen3.5's small models are Apache-2.0: you can use, modify and redistribute them, including commercially, if you keep the license notice. Other model families differ. Llama has its own license, Gemma has terms of use, and some Qwen3.8 models use a Qwen-specific license. The model card tells you. Derivatives you publish inherit the base model's terms, so name the base model in your own card.
+**Licenses.** Qwen3.5's small models are Apache-2.0: you can use, modify and redistribute them, including commercially, if you keep the license notice. Other model families differ. Llama has its own community license. Gemma 4 and Meta's Muse Glimmer are Apache-2.0. Licenses diverge inside the Qwen3.8 line: the 27B is Apache-2.0, the 2.4T-A95B uses the Qwen3.8-Max License, and Flash-Next uses the Qwen Community License 1.0. GLM-5.3, Kimi K3 and MiniMax-M3 ship under custom licenses rather than MIT. The model card tells you. Derivatives you publish inherit the base model's terms, so name the base model in your own card.
 
 <!-- section id="install" toc="Install Ollama" kicker="Part 1 · Run Qwen locally" -->
 ## Install Ollama and run your first Qwen
 
-[Ollama](https://ollama.com/) is the easiest runtime on all three platforms. It wraps llama.cpp (and, on Apple Silicon since v0.40, Apple's MLX), serves a local HTTP API on port 11434, and manages model files for you.
+[Ollama](https://ollama.com/) is the easiest runtime on all three platforms. It wraps llama.cpp (and, on Apple Silicon, Apple's MLX: a preview since v0.19 in March 2026, the default for supported models since v0.40.0 in September), serves a local HTTP API on port 11434, and manages model files for you.
 
 **Install:**
 ```bash
@@ -185,7 +215,7 @@ launchctl setenv OLLAMA_KEEP_ALIVE 5m          # unload after five idle minutes
 ```
 On Linux, put the same variables in the service's environment; on Windows, set them as user environment variables and restart Ollama. On a box with more memory, the first line is the only one that matters.
 
-> ◆ **Ollama's MLX runner on a 16 GB Mac is undocumented.** Since v0.40.0, Ollama runs supported models (Qwen3.5 included) on Apple's MLX by default. Its own announcement says MLX wants more than 32 GB. What a 16 GB Mac does is not documented. Check `ollama ps` and the server log to see which runner loaded, and compare speed against a `-q4_K_M` tag if in doubt.
+> ◆ **Ollama's MLX runner on a 16 GB Mac is undocumented.** Since v0.40.0, Ollama runs supported models (Qwen3.5, Qwen3.6, Qwen3.8 and Gemma 4 included) on Apple's MLX by default. The March 2026 preview post said MLX wanted more than 32 GB of unified memory; the v0.40.0 release notes state no memory requirement. What a 16 GB Mac does is not documented. Check `ollama ps` and the server log to see which runner loaded, and compare speed against a `-q4_K_M` tag if in doubt.
 
 <!-- section id="thinking" toc="Thinking mode" kicker="Part 1 · Run Qwen locally" -->
 ## Thinking mode
@@ -393,7 +423,7 @@ mlx_lm.lora --model mlx-community/Qwen3.5-4B-4bit --adapter-path adapters --data
 mlx_lm.generate --model mlx-community/Qwen3.5-4B-4bit --adapter-path adapters --prompt "..."
 ```
 
-**6 — Serve it.** `mlx_lm.server --model mlx-community/Qwen3.5-4B-4bit --adapter-path adapters` starts an OpenAI-compatible server on **127.0.0.1:8080**. Use 0.32.0 or later: 0.31.3 silently ignored `--adapter-path`.
+**6 — Serve it.** `mlx_lm.server --model mlx-community/Qwen3.5-4B-4bit --adapter-path adapters` starts an OpenAI-compatible server on **127.0.0.1:8080**. Use 0.32.0 or later: 0.31.3 silently ignored `--adapter-path` (mlx-lm issue #1248, fixed by #1249 in Aug 2026).
 
 > ◆ **No clean route into Ollama yet.** `mlx_lm.fuse --export-gguf` only supports llama, mistral and mixtral, and it refuses `qwen3_5`. A plausible path is `mlx_lm.fuse --dequantize` followed by `ollama create` from the fused safetensors folder (Ollama's importer registers `Qwen3_5ForCausalLM`). Whether `mlx-lm`'s fused layout imports cleanly is *untested*. Until you've proven it, serve with `mlx_lm.server`.
 
@@ -607,7 +637,7 @@ Heretic writes Hugging Face safetensors. To run the result in Ollama, convert wi
 
 **Route C: do it by hand.** The 2024-era reference scripts (FailSpy's `abliterator`, Sumandora's `remove-refusals-with-transformers`, mlabonne's notebook) assume CUDA and a Llama-style layout with `self_attn.o_proj` in every block. Qwen3.5-4B and 9B have **24 Gated DeltaNet layers and 8 full-attention layers**; the attention output projection is `linear_attn.out_proj` on the former and `self_attn.o_proj` on the latter, alongside `mlp.down_proj`. Old code breaks on this. Read Arditi's paper and Heretic's Qwen3.5 pull request (#187) before adapting anything, and treat it as a research project, not a weekend task.
 
-**OBLITERATUS.** [`elder-plinius/OBLITERATUS`](https://github.com/elder-plinius/OBLITERATUS) (AGPL-3.0) is a larger toolkit with several extraction methods (mean difference, PCA, sparse autoencoders, whitened SVD) and an MLX backend. Its validated Qwen work in October 2026 is a Qwen3.8-27B run on a CUDA device, so it isn't a tested Mac path for the small models. Note that telemetry is **on by default on its hosted Space** and opt-in locally.
+**OBLITERATUS.** [`elder-plinius/OBLITERATUS`](https://github.com/elder-plinius/OBLITERATUS) (AGPL-3.0) is a larger toolkit with several extraction methods (mean difference, PCA, sparse autoencoders, whitened SVD) and an MLX backend. Its README lists no validated models, and the Qwen work documented in its research notes is a Qwen3.8-27B run on a CUDA device, so it isn't a tested Mac path for the small models. Note that telemetry is **on by default on its hosted Space** and opt-in locally.
 
 <!-- section id="abl-eval" toc="Evaluate" kicker="Part 3 · Abliteration" -->
 ## Evaluate any abliterated model
@@ -672,7 +702,7 @@ Every version, number and command in this guide traces to one of these, checked 
 - **Nothing here was benchmarked on one fixed machine.** The memory figures come from vendor tables, one measured MLX budget on a 16 GB Mac, and labelled secondary reports. Measure your own peak.
 - **This field moves monthly.** `mlx-lm`, Unsloth, `transformers` and Ollama all changed Qwen3.5 support during 2026. Re-check versions before following a command.
 - **Untested paths are labelled.** Attention-only LoRA keys in `mlx-lm`, the fused-safetensors-to-Ollama import, and Unsloth's Mac path for Qwen3.5 are not proven here.
-- **The landscape table is a snapshot.** Model families, sizes and licenses change monthly. Re-check the model card before you commit to a family.
+- **The landscape tables are a snapshot, dated 2026-10-15.** Model families, sizes and licenses change weekly. Every row was checked against a model card or Ollama's library page that day; the watch list under the tables names what wasn't. Re-check the model card before you commit to a family.
 - **Part 3 is deliberately conceptual.** It explains the research and names the tools. It does not provide prompt sets, harmful examples or step-by-step editing code.
 - **A tuned model is still a language model.** It can be confidently wrong. Keep validators and human review wherever mistakes cost something.
 
