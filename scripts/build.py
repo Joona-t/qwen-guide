@@ -25,11 +25,13 @@ def inline(t):
 
 def callout(text):
     t = text.strip()
-    kinds = {"⚠": ("gotcha", "⚠ Gotcha"), "◆": ("caveat", "◆ Caveat"), "📝": ("note", "📝 Note")}
-    cls, tag = kinds.get(t[:1], ("note", "📝 How this guide was checked"))
+    kinds = {"⚠": ("gotcha", "Watch out"), "◆": ("caveat", "Caveat"), "📝": ("note", "Note")}
+    cls, tag = kinds.get(t[:1], ("note", "How this guide was checked"))
     m = re.match(r"^(⚠|◆|📝)\s*\*\*(.+?)\*\*\s*(.*)$", t, re.S)
     if m:
-        tag, body = f"{m.group(1)} {m.group(2).rstrip('.')}", m.group(3)
+        tag, body = m.group(2).rstrip('.'), m.group(3)
+    elif t[:1] in kinds:
+        body = t[1:].strip()
     else:
         body = t
     return f'<div class="callout callout--{cls}"><div class="ctag">{inline(tag)}</div><p>{inline(body)}</p></div>'
@@ -85,71 +87,111 @@ def blocks(lines):
         out.append(f"<p>{inline(' '.join(buf))}</p>")
     return "\n      ".join(out)
 
+THEMES = [("candy", "Candy", "#fbf3f5", "#a52f66"), ("retro", "Retro Pink", "#fdeef4", "#b8175a"),
+          ("noir", "Dark Noir", "#17131b", "#f09cc4"), ("beige", "Beige Paper", "#f3eee4", "#9c4a2b")]
+FONTS = [("serif", "Serif", "font-family:var(--serif)"), ("sans", "Sans", "font-family:var(--sans)"),
+         ("dyslexic", "OpenDyslexic", "font-family:var(--dys)")]
+RULES = [("Most problems don't need fine-tuning", "Prompt, retrieval and validators come first. Train only when a test set shows the base model failing."),
+         ("Small models train on small machines", "0.8B and 2B fit almost anywhere. 4B fits with care. 9B needs 24 GB-class hardware."),
+         ("Evaluate or it didn't happen", "Falling training loss proves fit, not improvement. Write a held-out test before you train.")]
+
 def build():
     md = (ROOT / "source/qwen-fine-tuning-guide.md").read_text(encoding="utf-8")
-    title = re.match(r"^# (.+)$", md, re.M).group(1)
     parts = re.split(r"^<!-- section (.*?) -->\n", md, flags=re.M)
     intro = parts[0].split("\n", 1)[1]
     sections, toc = [], []
-    intro_html = blocks(intro.split("\n"))
-    sections.append(f'<section id="start">\n      <p class="kicker">Start here</p>\n      <h2>Before you begin</h2>\n      {intro_html}\n    </section>')
-    toc.append('<a href="#start">Start here</a>')
+    sections.append(f'<section id="start">\n      <p class="kicker"><span class="rule"></span>Start here</p>\n      <h2>Before you begin</h2>\n      {blocks(intro.split(chr(10)))}\n    </section>')
+    toc.append(("start", "Start here"))
     for attrs, body in zip(parts[1::2], parts[2::2]):
         a = dict(re.findall(r'(\w+)="([^"]*)"', attrs))
         h2, rest = body.split("\n", 1)
         h2 = re.sub(r"^## ", "", h2)
-        sections.append(f'<section id="{a["id"]}">\n      <p class="kicker">{html.escape(a["kicker"])}</p>\n      <h2>{inline(h2)}</h2>\n      {blocks(rest.split(chr(10)))}\n    </section>')
-        toc.append(f'<a href="#{a["id"]}">{html.escape(a.get("toc", h2))}</a>')
+        sections.append(f'<section id="{a["id"]}">\n      <p class="kicker"><span class="rule"></span>{html.escape(a["kicker"])}</p>\n      <h2>{inline(h2)}</h2>\n      {blocks(rest.split(chr(10)))}\n    </section>')
+        toc.append((a["id"], a.get("toc", h2)))
     mascot = (T / "mascot.datauri").read_text(encoding="utf-8").strip()
     desc = "A first-principles, offline guide to fine-tuning Qwen3.5 locally: LoRA on a Mac with mlx-lm or an NVIDIA PC with Unsloth, with interactive calculators, honest memory limits and an evaluation-first workflow. No paid API."
-    head = (T / "head.html").read_text(encoding="utf-8").replace("{{TITLE}}", "Qwen Fine-Tuning — local LoRA guide").replace("{{DESCRIPTION}}", desc)
-    head = head.replace("</style>", (T / "widgets.css").read_text(encoding="utf-8") + "</style>", 1)
-    theme = (T / "theme-menu.html").read_text(encoding="utf-8")
-    hero = f'''<header class="hero">
-  <div class="hero-sparkles" aria-hidden="true"><span class="spark">✦</span><span class="spark">♥</span><span class="spark">✦</span></div>
-  <div class="hero-inner">
-    <div class="topbar">
-      <div class="brand-mark">
-        <img src="{mascot}" alt="Sparky, the LoveSpark wolf mascot">
-        <span class="heart-dot" aria-hidden="true">♥</span>
-        <div class="lockup"><b>LoveSpark</b><span>Local Qwen fine-tuning guide</span></div>
+    css = (T / "fonts.css").read_text(encoding="utf-8") + (T / "style.css").read_text(encoding="utf-8")
+    themes = "".join(f'<button type="button" role="menuitemradio" aria-checked="false" data-theme="{k}"><span class="swatch" style="background:linear-gradient(135deg,{bg} 50%,{ac} 50%)"></span>{n}</button>' for k, n, bg, ac in THEMES)
+    fonts = "".join(f'<button type="button" role="menuitemradio" aria-checked="false" data-font="{k}"><span class="fontpreview" style="{st}" aria-hidden="true">Aa</span>{n}</button>' for k, n, st in FONTS)
+    rules = "".join(f"<li><h3>{inline(t)}</h3><p>{inline(d)}</p></li>" for t, d in RULES)
+    body = "\n\n    ".join(sections)
+    toc_items = "".join(f'<li><a href="#{i}">{html.escape(t)}</a></li>' for i, t in toc)
+    return f"""<!doctype html>
+<html lang="en" data-theme="candy" data-font="serif">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fine-tune Qwen locally · a LoRA guide for Mac and PC</title>
+<meta name="description" content="{desc}">
+<meta property="og:title" content="Fine-tune Qwen locally · a LoRA guide for Mac and PC">
+<meta property="og:description" content="{desc}">
+<meta property="og:url" content="https://lovespark.love/qwen-fine-tuning-guide/">
+<meta name="theme-color" content="#fbf3f5">
+<style>
+{css}</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div id="progress" class="progress" aria-hidden="true"></div>
+
+<header class="topbar">
+  <a class="wordmark" href="#top" aria-label="Fine-tune Qwen locally, back to top">
+    <img src="{mascot}" alt="Sparky, the LoveSpark wolf mascot">
+    <span class="wordmark-text"><span class="wordmark-title">Qwen Fine-Tuning</span><span class="wordmark-sub">A LoveSpark guide · Oct 2026</span></span>
+  </a>
+  <nav class="topnav" aria-label="Main navigation">
+    <a href="#mac">Mac path</a>
+    <a href="#nvidia">NVIDIA path</a>
+    <a href="#trouble">Troubleshooting</a>
+    <div class="appearance">
+      <button id="themeBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="themeMenu">Change Theme</button>
+      <div id="themeMenu" role="menu" aria-label="Theme and reading font" hidden>
+        <p class="menu-label">Theme</p>{themes}
+        <hr>
+        <p class="menu-label">Reading font</p>{fonts}
       </div>
-      {theme}
     </div>
-    <div class="badge-row">
-      <span class="pill brand">Qwen3.5 × LoRA</span>
-      <span class="pill ok">● 100% local, no paid API</span>
-      <span class="pill">Mac (mlx-lm) or NVIDIA PC (Unsloth)</span>
-      <span class="pill">checked Oct 2026</span>
-    </div>
-    <h1 class="title">{inline(title.split(":")[0])}.</h1>
-    <p class="tagline">From one gradient step to a working LoRA adapter you can serve locally, on an <strong>Apple Silicon Mac</strong> or an <strong>NVIDIA PC</strong>.</p>
-    <div class="verdicts">
-      <div class="verdict warn"><div class="vlabel">① Rule</div><h3>Most problems don't need fine-tuning</h3><p>Prompt, retrieval and validators come first. Train only when a test set shows the base model failing.</p></div>
-      <div class="verdict ok"><div class="vlabel">② Rule</div><h3>Small models train on small machines</h3><p>0.8B and 2B fit almost anywhere. 4B fits with care. 9B needs 24 GB-class hardware.</p></div>
-      <div class="verdict sec"><div class="vlabel">③ Rule</div><h3>Evaluate or it didn't happen</h3><p>Falling training loss proves fit, not improvement. Write a held-out test before you train.</p></div>
-    </div>
-    <div class="hero-cta">
-      <a class="btn primary" href="#start">Start here ↓</a>
-      <a class="btn" href="#mac">Mac path</a>
-      <a class="btn" href="#nvidia">NVIDIA path</a>
-      <a class="btn" href="#trouble">Troubleshooting</a>
+  </nav>
+</header>
+
+<section class="hero" id="top" aria-labelledby="hero-title">
+  <div class="hero-copy">
+    <p class="eyebrow"><span class="rule"></span>A local LoRA guide</p>
+    <h1 id="hero-title">Fine-tune<br>Qwen locally</h1>
+    <p class="hero-dates">Qwen3.5 0.8B – 9B · checked October 2026</p>
+    <p class="hero-description">From one gradient step to a working LoRA adapter you can serve on your own machine, on an Apple Silicon Mac or an NVIDIA PC. No paid API, no accounts, nothing leaves your computer.</p>
+    <div class="hero-actions">
+      <a class="button" href="#start">Start reading <span aria-hidden="true">→</span></a>
+      <a class="text-link" href="#mac">Mac path →</a>
+      <a class="text-link" href="#nvidia">NVIDIA path →</a>
     </div>
   </div>
-</header>'''
-    nav = '<nav class="toc" aria-label="Table of contents">\n    <strong>Contents</strong>\n    ' + "\n    ".join(toc) + "\n  </nav>"
-    footer = f'''<footer>
+  <figure class="plaque" aria-label="Three rules this guide keeps coming back to">
+    <ol>{rules}</ol>
+  </figure>
+</section>
+
+<div class="layout">
+  <nav class="toc" aria-label="Contents"><p class="eyebrow">Contents</p><ol>{toc_items}</ol></nav>
+  <main id="main">
+    <details class="toc-mobile"><summary>Contents</summary><ol>{toc_items}</ol></details>
+    {body}
+  </main>
+</div>
+
+<footer>
   <div class="foot-inner">
     <img src="{mascot}" alt="Sparky, the LoveSpark wolf mascot">
-    <div>
-      <strong>Qwen fine-tuning guide</strong>: one self-contained HTML file; open it anywhere, no server needed, nothing leaves your machine.<br>
-      Built from <code>source/qwen-fine-tuning-guide.md</code> · facts checked October 2026 · MIT licensed · 100% local, no paid API · made for neurodivergent builders 🐺
-    </div>
+    <div>One self-contained page: no server, no tracking, nothing leaves your machine. Built from <code>source/qwen-fine-tuning-guide.md</code> · MIT licensed · companion to <a href="https://lovespark.love/" rel="noopener">LoveSpark</a>'s <a href="https://github.com/Joona-t/qwen-local-guide" rel="noopener">Qwen Local guide</a>.</div>
   </div>
-</footer>'''
-    script = "<script>\n" + (T / "base.js").read_text(encoding="utf-8") + (T / "widgets.js").read_text(encoding="utf-8") + "})();\n</script>"
-    body = "\n\n    ".join(sections)
-    return f'{head}<body>\n\n{hero}\n\n<div class="wrap">\n  {nav}\n\n  <main>\n    {body}\n  </main>\n</div>\n\n{footer}\n\n{script}\n</body>\n</html>\n'
+</footer>
+
+<script>
+{(T / "base.js").read_text(encoding="utf-8")}{(T / "widgets.js").read_text(encoding="utf-8")}}})();
+</script>
+</body>
+</html>
+"""
 
 if __name__ == "__main__":
     out = build()

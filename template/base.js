@@ -1,73 +1,74 @@
-
 (function(){
   "use strict";
 
-  /* ---- Persist: localStorage with graceful in-memory fallback ---- */
+  /* ---- Persist: localStorage with an in-memory fallback ---- */
   var Persist = (function(){
-    var mem = {}, ok = true;
-    try { var k="__ls_test__"; localStorage.setItem(k,"1"); localStorage.removeItem(k); }
-    catch(e){ ok = false; }
+    var mem = {}, ok = false;
+    try { localStorage.setItem('__t','1'); localStorage.removeItem('__t'); ok = true; } catch(e) {}
     return {
-      get: function(key){ try { return ok ? localStorage.getItem(key) : (mem[key]||null); } catch(e){ return mem[key]||null; } },
-      set: function(key,val){ try { if(ok) localStorage.setItem(key,val); else mem[key]=val; } catch(e){ mem[key]=val; } }
+      get: function(k){ try { return ok ? localStorage.getItem(k) : (mem[k] || null); } catch(e){ return mem[k] || null; } },
+      set: function(k,v){ try { if(ok) localStorage.setItem(k,v); else mem[k]=v; } catch(e){ mem[k]=v; } }
     };
   })();
+  var root = document.documentElement;
 
-  /* ---- Copy buttons (innerText so highlight spans don't leak) ---- */
+  /* ---- Appearance menu: theme + reading font ---- */
+  var btn = document.getElementById('themeBtn'), menu = document.getElementById('themeMenu');
+  function apply(kind, val){
+    root.setAttribute('data-' + kind, val);
+    Persist.set('qft-' + kind, val);
+    menu.querySelectorAll('button[data-' + kind + ']').forEach(function(b){
+      b.setAttribute('aria-checked', b.getAttribute('data-' + kind) === val ? 'true' : 'false');
+    });
+  }
+  function openMenu(open){ menu.hidden = !open; btn.setAttribute('aria-expanded', open ? 'true' : 'false'); if(open){ var f = menu.querySelector('[aria-checked="true"]') || menu.querySelector('button'); f && f.focus(); } }
+  btn.addEventListener('click', function(e){ e.stopPropagation(); openMenu(menu.hidden); });
+  menu.addEventListener('click', function(e){ e.stopPropagation(); });
+  menu.querySelectorAll('button[data-theme]').forEach(function(b){ b.addEventListener('click', function(){ apply('theme', b.dataset.theme); }); });
+  menu.querySelectorAll('button[data-font]').forEach(function(b){ b.addEventListener('click', function(){ apply('font', b.dataset.font); }); });
+  document.addEventListener('click', function(){ if(!menu.hidden) openMenu(false); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !menu.hidden){ openMenu(false); btn.focus(); } });
+  apply('theme', Persist.get('qft-theme') || 'candy');
+  apply('font', Persist.get('qft-font') || 'serif');
+
+  /* ---- Copy buttons on code blocks ---- */
   document.querySelectorAll('.code').forEach(function(block){
-    var btn = block.querySelector('.copy'), pre = block.querySelector('pre');
-    if(!btn || !pre) return;
-    btn.addEventListener('click', function(){
+    var b = block.querySelector('.copy'), pre = block.querySelector('pre');
+    if(!b || !pre) return;
+    b.addEventListener('click', function(){
       var text = pre.innerText;
-      navigator.clipboard.writeText(text).then(function(){
-        btn.textContent='Copied'; btn.classList.add('done');
-        setTimeout(function(){ btn.textContent='Copy'; btn.classList.remove('done'); }, 1500);
-      }).catch(function(){ btn.textContent='Press ⌘C'; });
+      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function(){
+        b.textContent = 'Copied'; b.classList.add('done');
+        setTimeout(function(){ b.textContent = 'Copy'; b.classList.remove('done'); }, 1500);
+      }).catch(function(){ b.textContent = 'Press ⌘C'; });
     });
   });
 
-  /* ---- Scroll-spy TOC ---- */
-  var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
-  var map = {};
-  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
-  if('IntersectionObserver' in window){
+  /* ---- Contents rail: highlight the section in view ---- */
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  if('IntersectionObserver' in window && links.length){
+    var map = {}; links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
     var obs = new IntersectionObserver(function(entries){
       entries.forEach(function(e){
-        if(e.isIntersecting){
-          links.forEach(function(a){ a.classList.remove('active'); });
-          var a = map[e.target.id]; if(a) a.classList.add('active');
+        if(e.isIntersecting && map[e.target.id]){
+          links.forEach(function(a){ a.classList.remove('active'); a.removeAttribute('aria-current'); });
+          map[e.target.id].classList.add('active'); map[e.target.id].setAttribute('aria-current', 'true');
         }
       });
-    }, { rootMargin: '-12% 0px -75% 0px', threshold: 0 });
+    }, { rootMargin: '-20% 0px -70% 0px' });
     document.querySelectorAll('main section[id]').forEach(function(s){ obs.observe(s); });
   }
 
-  /* ---- Theme dropdown ---- */
-  var THEMES = ['candy','retro','noir','beige'];
-  var themeBtn = document.getElementById('themeBtn'), themeList = document.getElementById('themeList');
-  function applyTheme(t){
-    if(THEMES.indexOf(t) < 0) t = 'candy';
-    document.documentElement.dataset.theme = t;
-    Persist.set('qft-theme', t);
-    themeList.querySelectorAll('button[data-theme]').forEach(function(b){
-      b.setAttribute('aria-current', b.dataset.theme === t ? 'true' : 'false');
-    });
+  /* ---- Reading progress bar ---- */
+  var bar = document.getElementById('progress');
+  if(bar){
+    var tick = false;
+    window.addEventListener('scroll', function(){
+      if(tick) return; tick = true;
+      requestAnimationFrame(function(){
+        var h = document.documentElement.scrollHeight - innerHeight;
+        bar.style.transform = 'scaleX(' + (h > 0 ? Math.min(1, scrollY / h) : 0) + ')'; tick = false;
+      });
+    }, { passive: true });
   }
-  function openMenu(open){ themeList.hidden = !open; themeBtn.setAttribute('aria-expanded', open?'true':'false'); }
-  themeBtn.addEventListener('click', function(e){ e.stopPropagation(); openMenu(themeList.hidden); });
-  themeList.querySelectorAll('button[data-theme]').forEach(function(b){
-    b.addEventListener('click', function(){ applyTheme(b.dataset.theme); openMenu(false); themeBtn.focus(); });
-  });
-  document.addEventListener('click', function(){ if(!themeList.hidden) openMenu(false); });
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && !themeList.hidden){ openMenu(false); themeBtn.focus(); } });
-  applyTheme(Persist.get('qft-theme') || 'candy');
-
-  /* ---- Glossary tooltips (click/Enter/Space to pin; for touch) ---- */
-  document.querySelectorAll('.gloss').forEach(function(g){
-    g.setAttribute('aria-expanded', 'false');                 // announce disclosure state to screen readers
-    function sync(){ g.setAttribute('aria-expanded', g.classList.contains('open') ? 'true' : 'false'); }
-    g.addEventListener('click', function(e){ e.stopPropagation(); g.classList.toggle('open'); sync(); });
-    g.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); g.classList.toggle('open'); sync(); } });
-  });
-  document.addEventListener('click', function(){ document.querySelectorAll('.gloss.open').forEach(function(g){ g.classList.remove('open'); g.setAttribute('aria-expanded','false'); }); });
 

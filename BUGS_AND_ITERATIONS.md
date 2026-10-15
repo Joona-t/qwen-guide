@@ -2,6 +2,24 @@
 
 Newest first.
 
+## ITER-002 — Editorial redesign, closer to the Raw Thought reader (2026-10-15)
+- **Why:** owner feedback. The candy "glass-sticker" shell read as too zoomed-in and childish for a general audience:
+  big rounded cards, letter-spaced OpenDyslexic headings, and a busy pill row.
+- **What:** a new `template/style.css` replaces the inherited shell CSS. It follows the Raw Thought reader's layout:
+  - a hairline top bar with an italic serif wordmark;
+  - a hero with an eyebrow, a large serif title, an italic date line, and the three rules in a double-ruled plaque;
+  - a 700px serif reading column with a slim sticky contents rail that highlights the current section, collapsing
+    to a `<details>` list under 1080px;
+  - hairline tables, ruled callouts with plain-text labels, flat code blocks, and widgets as quiet double-ruled
+    panels;
+  - a reading progress bar.
+- **Kept:** the four themes, re-tuned as flat paper/ink/accent palettes, with every text pair at AA or better
+  (≥ 4.8:1, computed). Sparky stays in the wordmark and footer.
+- **Added:** a reading-font choice (Serif, Sans, OpenDyslexic) in the Change Theme menu, persisted per browser.
+- **Removed:** emoji from widget titles and callout labels.
+- **Verified:** `verify.mjs` PASS (87 checks); no console errors; 1400px, 800px and 360px with no horizontal
+  overflow; Candy/serif and Noir/OpenDyslexic screenshots checked.
+
 ### BUG-001 — "Custom (billions)" field showed for preset models (2026-10-15)
 - **Symptom:** at 360px in the Candy theme, the memory calculator showed the custom-parameters input even with
   Qwen3.5-4B selected.
