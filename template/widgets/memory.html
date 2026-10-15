@@ -1,0 +1,15 @@
+<div class="calc" id="calc-mem">
+  <h3>💾 Weight storage</h3>
+  <p class="csub"><code>bytes = parameters × bits ÷ 8</code>. GB is 10<sup>9</sup> bytes; GiB is 2<sup>30</sup>.</p>
+  <div class="calc__row">
+    <div class="field"><label for="params">Parameters (billions)</label>
+      <select id="params"><option value="0.85">Qwen3.5-0.8B (~0.85B)</option><option value="2.27">Qwen3.5-2B (~2.27B)</option><option value="4.66" selected>Qwen3.5-4B (~4.66B)</option><option value="9.65">Qwen3.5-9B (~9.65B)</option><option value="custom">Custom…</option></select></div>
+    <div class="field" id="paramsCustomWrap" hidden><label for="paramsCustom">Custom (billions)</label><input type="number" id="paramsCustom" min="0.1" max="200" step="0.1" value="7"></div>
+    <div class="field"><label for="bits">Bits per weight</label><select id="bits"><option value="4">4-bit</option><option value="8">8-bit</option><option value="16" selected>16-bit (bf16)</option><option value="32">32-bit</option></select></div>
+  </div>
+  <div class="calc__out" aria-live="polite">
+    <div class="bignum" id="memOut">9.32 <small>GB of weights</small></div>
+    <div class="outline" id="memNote">≈ 8.68 GiB</div>
+  </div>
+  <p class="calc__caveat"><strong>Weights only. This is not a training-fit estimate.</strong> Training adds activations, gradients, optimizer state and buffers on top. Counts include the vision encoder: 4B and 9B from the official checkpoints, 0.8B and 2B from same-architecture derived checkpoints.</p>
+</div>

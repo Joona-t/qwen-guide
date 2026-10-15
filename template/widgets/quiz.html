@@ -1,0 +1,16 @@
+<form class="calc quiz" id="quizForm">
+  <fieldset><legend>1. Training loss fell steadily. What does that prove?</legend>
+    <label><input type="radio" name="q1" value="a"> The model is now better at the task.</label>
+    <label><input type="radio" name="q1" value="b"> It fits the training examples better. Only a held-out test shows whether it improved.</label></fieldset>
+  <fieldset><legend>2. A 4B model is about 2.3 GB at 4-bit. So on an 8 GB GPU…</legend>
+    <label><input type="radio" name="q2" value="a"> Training will fit easily.</label>
+    <label><input type="radio" name="q2" value="b"> You don't know yet. Activations, gradients and optimizer state come on top, so measure.</label></fieldset>
+  <fieldset><legend>3. The model doesn't know facts from your internal docs. Best first fix?</legend>
+    <label><input type="radio" name="q3" value="a"> Retrieval (RAG): put the relevant docs in the context.</label>
+    <label><input type="radio" name="q3" value="b"> Fine-tune on the docs so it memorises them.</label></fieldset>
+  <fieldset><legend>4. After exporting to Ollama, answers are gibberish. First suspect?</legend>
+    <label><input type="radio" name="q4" value="a"> The learning rate was too high.</label>
+    <label><input type="radio" name="q4" value="b"> The chat template or end-of-sequence token doesn't match training.</label></fieldset>
+  <div class="wbtns"><button type="submit" class="wbtn primary">Check answers</button><button type="reset" class="wbtn">Clear</button></div>
+  <div class="calc__out" id="quizResult" role="status">Answer all four, then check.</div>
+</form>

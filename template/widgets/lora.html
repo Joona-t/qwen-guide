@@ -1,0 +1,15 @@
+<div class="calc" id="calc-lora">
+  <h3>🧩 LoRA parameter counter</h3>
+  <p class="csub">For one weight matrix of shape d<sub>out</sub> × d<sub>in</sub>, LoRA trains <code>A</code> (r × d<sub>in</sub>) and <code>B</code> (d<sub>out</sub> × r). Trainable = r·(d<sub>in</sub> + d<sub>out</sub>) per matrix.</p>
+  <div class="calc__row">
+    <div class="field"><label for="din">Input dimension d<sub>in</sub></label><select id="din"><option>1024</option><option>2560</option><option selected>4096</option><option>12288</option></select></div>
+    <div class="field"><label for="dout">Output dimension d<sub>out</sub></label><select id="dout"><option>1024</option><option>2560</option><option selected>4096</option><option>12288</option></select></div>
+    <div class="field"><label for="rank">Rank r</label><input type="number" id="rank" min="1" max="256" step="1" value="16"></div>
+    <div class="field"><label for="nmat">Adapted matrices</label><input type="number" id="nmat" min="1" max="2048" step="1" value="1"></div>
+  </div>
+  <div class="calc__out" aria-live="polite">
+    <div class="bignum" id="loraOut">131,072 <small>trainable</small></div>
+    <div class="outline" id="loraNote">vs 16,777,216 frozen · 0.78% of the base matrix</div>
+  </div>
+  <p class="calc__caveat"><strong>Arithmetic, not an inventory of Qwen's layers.</strong> Real counts depend on which modules you target. Higher rank means more capacity and more memory; it doesn't guarantee better results. (Qwen3.5-4B's hidden size is 2560; the 9B's is 4096.)</p>
+</div>

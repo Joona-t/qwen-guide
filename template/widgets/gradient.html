@@ -1,0 +1,17 @@
+<div class="calc" id="calc-step">
+  <h3>🧮 One weight, one example, one step</h3>
+  <p class="csub">A single-weight logistic model with input 1 and no bias. <code>p</code> is the probability it gives the target answer. It isn't Qwen, but the update rule is the same one.</p>
+  <div class="calc__row">
+    <div class="field"><label for="lr">Learning rate η</label><input type="number" id="lr" min="0.05" max="4" step="0.05" value="0.5"></div>
+    <div class="field"><label for="target">Label for this example</label>
+      <select id="target"><option value="1">Correct label (y = 1)</option><option value="0">Wrong label (y = 0)</option></select></div>
+  </div>
+  <div class="wbtns"><button type="button" class="wbtn primary" id="step1">Take 1 step</button><button type="button" class="wbtn" id="step10">Take 10 steps</button><button type="button" class="wbtn" id="stepReset">Reset</button></div>
+  <div class="formula">p = sigmoid(w) = 1 / (1 + e<sup>−w</sup>) · loss = −[y·ln p + (1−y)·ln(1−p)] · gradient = p − y · w<sub>next</sub> = w − η × gradient</div>
+  <div class="calc__out" aria-live="polite">
+    <div class="metrics"><div><span>Weight w</span><b id="wOut">−2.0000</b></div><div><span>p (target answer)</span><b id="pOut">11.92%</b></div><div><span>Loss</span><b id="lossOut">2.1269</b></div></div>
+    <svg class="lossplot" viewBox="0 0 600 160" role="img" aria-labelledby="lossT lossD"><title id="lossT">Training loss for this one example</title><desc id="lossD">Loss after each update. This is training loss only, not a held-out result.</desc><path d="M40 14V136H590" class="axis" fill="none"/><polyline id="lossLine" points="40,20" fill="none" class="lossline"/><circle id="lossDot" cx="40" cy="20" r="5" class="lossdot"/></svg>
+    <div class="outline" id="stepNote">Start at w = −2. A correct label pushes the weight up.</div>
+  </div>
+  <p class="calc__caveat"><strong>Training loss only.</strong> Falling loss means a better fit to this example. Switch to the wrong label: the loss still falls, because the model is learning the wrong answer well.</p>
+</div>
