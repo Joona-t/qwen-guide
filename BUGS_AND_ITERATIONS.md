@@ -1,6 +1,27 @@
-# Bugs & Iterations — Qwen fine-tuning guide
+# Bugs & Iterations — Qwen, locally
 
 Newest first.
+
+## ITER-003 — One guide in three parts: run, fine-tune, abliteration (2026-10-15)
+- **Why:** the owner wanted one complete local-Qwen guide, not a fine-tuning guide with pointers elsewhere: set up
+  first, then fine-tune, then abliteration, each with learning resources, plus responsibility and safety; and a
+  section on Hugging Face; and a view of local models as a whole so readers choose by use case, not by hype.
+- **Part 1 (new):** what a local model is; "local models and your use case" (when local wins, when a hosted model is
+  still right, a landscape table of Qwen/Gemma/gpt-oss/Ministral/Granite/Llama/Qwen2.5-Coder with sizes and
+  licenses, a six-step how-to-choose, benchmarks-are-a-starting-point); which Qwen3.5 size; Hugging Face (the Hub,
+  model cards, safetensors/GGUF/MLX, the `hf` CLI from its docs, tokens, running Hub GGUFs in Ollama with the
+  `hf.co/user/repo:QUANT` syntax from HF's Ollama page, licenses); Ollama install on macOS/Linux/Windows with GPU
+  requirements from docs.ollama.com/gpu; thinking mode; other runtimes; the OpenAI-compatible API; keeping it on
+  loopback; learn-more list. Setup facts for the Mac reuse the skeptic-verified Qwen Local research.
+- **Part 2:** the existing fine-tuning sections, renumbered, with a learn-more list.
+- **Part 3 (new):** abliteration mechanism, later research (five papers), measured costs, a full responsibility and
+  safety section (what is removed, who you are responsible to, five rules, a five-question decision check, why the
+  section explains rather than refuses), three routes, evaluation, learn-more list including the interpretability
+  background. Conceptual and tooling level only; no prompts, no editing code.
+- **Build:** `<!-- part title="…" -->` markers group the contents rail; hero, nav and rules rewritten; source renamed
+  to `source/qwen-guide.md`; troubleshooting table gains Part 1 and Part 3 rows; sources and caveats extended.
+- **Verified:** `verify.mjs` PASS (125 checks, 34 sections); every learn-more link returned 200 on 2026-10-15
+  (two candidates that didn't were dropped); browser check at desktop and 360px.
 
 ## ITER-002 — Editorial redesign, closer to the Raw Thought reader (2026-10-15)
 - **Why:** owner feedback. The candy "glass-sticker" shell read as too zoomed-in and childish for a general audience:

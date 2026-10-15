@@ -1,37 +1,31 @@
-# Qwen fine-tuning guide
+# Qwen, locally
 
-A first-principles, **offline** guide to fine-tuning Qwen3.5 locally with LoRA, on an **Apple Silicon Mac** (`mlx-lm`) or an **NVIDIA PC** (Unsloth). No paid API anywhere.
+A first-principles, **offline** guide to local Qwen models, in three parts: **run** one on a Mac, Linux or Windows PC; **fine-tune** it with LoRA; and **understand abliteration**, what it costs and what you take on. No paid API anywhere.
 
-It's the companion to [Qwen Local](https://github.com/Joona-t/qwen-local-guide), which covers running Qwen, RAG and shared agent memory on a 16 GB Mac.
+Read it at **[lovespark.love/qwen-guide](https://lovespark.love/qwen-guide/)**, or download the repo and open **`index.html`** in any browser. It's one self-contained file: fonts and the mascot are inlined, it makes no network requests, and nothing leaves your machine. Prefer plain text? [`source/qwen-guide.md`](source/qwen-guide.md) has the same content.
 
-## Open it
-
-Download the repo and open **`index.html`** in any browser. It's one self-contained file: fonts and the mascot are inlined, it makes no network requests, and nothing leaves your machine. Prefer plain text? Read [`source/qwen-fine-tuning-guide.md`](source/qwen-fine-tuning-guide.md), which has the same content.
+It's the companion to [Qwen Local](https://github.com/Joona-t/qwen-local-guide), which goes further on a 16 GB Mac: retrieval (RAG), a vector database and shared memory for several agents.
 
 ## What's in it
 
-- **Foundations.** What fine-tuning changes, and how it compares with prompting, retrieval and better tools.
-- **One learning step, made visible.** An interactive single-weight trainer that shows why lower loss isn't the same as "better."
-- **LoRA and QLoRA.** A live parameter counter, and why QLoRA isn't recommended for Qwen3.5.
-- **Will it fit?** A weight-storage calculator, how to read your real memory budget, and a fits table for Macs (16/24/32 GB+) and NVIDIA cards (8/12/16/24 GB).
-- **Decide first, then build the dataset.** Baseline, held-out test, pass rule, stop rule, data checklist, thinking-mode handling.
-- **Path A, Mac:** `mlx-lm` install → train → test → serve, plus the Qwen3.5 hybrid-layer gotcha.
-- **Path B, NVIDIA:** Unsloth on Linux, WSL or Windows → train → GGUF export → Ollama.
-- **Evaluate, ship, go further.** Honest evaluation, serving, DPO/GRPO, vision, and a pointer to abliteration.
-- **Quiz, troubleshooting table, sources, caveats.**
+**Part 1 — Run Qwen locally.** What a local model actually is. Whether local suits your use case, and how Qwen compares with Gemma, gpt-oss, Ministral, Granite and Llama. Which Qwen3.5 size for which job. What Hugging Face is and how to use it: model cards, file formats, the `hf` command, licenses. Installing Ollama on all three platforms, GPU requirements, first run, thinking mode, other runtimes, using the model from code, and keeping it on your machine.
 
-Every command and number was checked against a primary source in **October 2026**. Anything that isn't is labelled *secondary* or *untested*.
+**Part 2 — Fine-tune.** When fine-tuning is the right tool. An interactive single-weight trainer, a LoRA parameter counter and a weight-storage calculator. What fits in 8 to 32 GB. A decide-first checklist, a dataset checklist, the Mac path (`mlx-lm`) and the NVIDIA path (Unsloth, with export to Ollama), honest evaluation, serving, and a quiz.
+
+**Part 3 — Abliteration.** How refusal removal works, what later research found, the measured capability cost, a full responsibility-and-safety section with a decision check, the three local routes (published models, Heretic, by hand), and how to evaluate the result.
+
+Each part ends with a **Learn more** list. A **Reference** section has troubleshooting, sources and caveats. Every command and number was checked against a primary source in **October 2026**; anything that isn't is labelled *secondary* or *untested*.
 
 ## Editing
 
-`source/qwen-fine-tuning-guide.md` is the source of truth. `index.html` is generated from it:
+`source/qwen-guide.md` is the source of truth. `index.html` is generated from it:
 
 ```bash
 python3 scripts/build.py      # regenerate index.html
 node scripts/verify.mjs       # build freshness, widget math, anchors, no network, no personal paths
 ```
 
-Section and widget placement live in HTML comments inside the Markdown (`<!-- section ... -->`, `<!-- widget:name -->`), so the file still reads cleanly on GitHub. Widgets, styles (`template/style.css`), the bundled font and the page script are in `template/`.
+Parts, sections and widgets are placed with HTML comments inside the Markdown (`<!-- part ... -->`, `<!-- section ... -->`, `<!-- widget:name -->`), so the file still reads cleanly on GitHub. Widgets, styles (`template/style.css`), the bundled font and the page script are in `template/`.
 
 ## Design and accessibility
 

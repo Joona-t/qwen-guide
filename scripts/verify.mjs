@@ -6,7 +6,7 @@ import vm from 'node:vm';
 
 const root = new URL('../', import.meta.url);
 const html = readFileSync(new URL('index.html', root), 'utf8');
-const md = readFileSync(new URL('source/qwen-fine-tuning-guide.md', root), 'utf8');
+const md = readFileSync(new URL('source/qwen-guide.md', root), 'utf8');
 let checks = 0;
 const ok = (c, msg) => { assert.ok(c, msg); checks++; };
 const near = (a, b, t = 1e-9) => ok(Math.abs(a - b) < t, `${a} != ${b}`);

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build index.html from source/qwen-fine-tuning-guide.md (the source of truth).
+"""Build index.html from source/qwen-guide.md (the source of truth).
 
 The Markdown stays readable on GitHub; HTML comments carry the build hints:
   <!-- section id="x" kicker="Part 1 · Foundations" -->   starts a <section>
@@ -91,39 +91,43 @@ THEMES = [("candy", "Candy", "#fbf3f5", "#a52f66"), ("retro", "Retro Pink", "#fd
           ("noir", "Dark Noir", "#17131b", "#f09cc4"), ("beige", "Beige Paper", "#f3eee4", "#9c4a2b")]
 FONTS = [("serif", "Serif", "font-family:var(--serif)"), ("sans", "Sans", "font-family:var(--sans)"),
          ("dyslexic", "OpenDyslexic", "font-family:var(--dys)")]
-RULES = [("Most problems don't need fine-tuning", "Prompt, retrieval and validators come first. Train only when a test set shows the base model failing."),
-         ("Small models train on small machines", "0.8B and 2B fit almost anywhere. 4B fits with care. 9B needs 24 GB-class hardware."),
-         ("Evaluate or it didn't happen", "Falling training loss proves fit, not improvement. Write a held-out test before you train.")]
+RULES = [("Run it before you change it", "Most \"the model can't do X\" problems are solved with a better prompt, retrieval or a different model, not with training or surgery."),
+         ("Test on your own task", "A small set of real inputs with the answers you'd accept, written before you start, beats every leaderboard and every loss curve."),
+         ("Own what you ship", "A local model is yours: its privacy, its mistakes, and anything you removed from it.")]
 
 def build():
-    md = (ROOT / "source/qwen-fine-tuning-guide.md").read_text(encoding="utf-8")
-    parts = re.split(r"^<!-- section (.*?) -->\n", md, flags=re.M)
+    md = (ROOT / "source/qwen-guide.md").read_text(encoding="utf-8")
+    parts = re.split(r"^<!-- (section|part) (.*?) -->\n", md, flags=re.M)
     intro = parts[0].split("\n", 1)[1]
-    sections, toc = [], []
+    sections, toc = [], []   # toc entries: ("part", title) or (id, label)
     sections.append(f'<section id="start">\n      <p class="kicker"><span class="rule"></span>Start here</p>\n      <h2>Before you begin</h2>\n      {blocks(intro.split(chr(10)))}\n    </section>')
     toc.append(("start", "Start here"))
-    for attrs, body in zip(parts[1::2], parts[2::2]):
+    for kind, attrs, body in zip(parts[1::3], parts[2::3], parts[3::3]):
         a = dict(re.findall(r'(\w+)="([^"]*)"', attrs))
+        if kind == "part":
+            toc.append(("part", a["title"]))
+            assert not body.strip(), "content between a part marker and its first section"
+            continue
         h2, rest = body.split("\n", 1)
         h2 = re.sub(r"^## ", "", h2)
         sections.append(f'<section id="{a["id"]}">\n      <p class="kicker"><span class="rule"></span>{html.escape(a["kicker"])}</p>\n      <h2>{inline(h2)}</h2>\n      {blocks(rest.split(chr(10)))}\n    </section>')
         toc.append((a["id"], a.get("toc", h2)))
     mascot = (T / "mascot.datauri").read_text(encoding="utf-8").strip()
-    desc = "A first-principles, offline guide to fine-tuning Qwen3.5 locally: LoRA on a Mac with mlx-lm or an NVIDIA PC with Unsloth, with interactive calculators, honest memory limits and an evaluation-first workflow. No paid API."
+    desc = "A first-principles, offline guide to local Qwen models in three parts: run one on a Mac, Linux or Windows; fine-tune it with LoRA; understand abliteration, its costs and your responsibilities. With interactive calculators and verified sources. No paid API."
     css = (T / "fonts.css").read_text(encoding="utf-8") + (T / "style.css").read_text(encoding="utf-8")
     themes = "".join(f'<button type="button" role="menuitemradio" aria-checked="false" data-theme="{k}"><span class="swatch" style="background:linear-gradient(135deg,{bg} 50%,{ac} 50%)"></span>{n}</button>' for k, n, bg, ac in THEMES)
     fonts = "".join(f'<button type="button" role="menuitemradio" aria-checked="false" data-font="{k}"><span class="fontpreview" style="{st}" aria-hidden="true">Aa</span>{n}</button>' for k, n, st in FONTS)
     rules = "".join(f"<li><h3>{inline(t)}</h3><p>{inline(d)}</p></li>" for t, d in RULES)
     body = "\n\n    ".join(sections)
-    toc_items = "".join(f'<li><a href="#{i}">{html.escape(t)}</a></li>' for i, t in toc)
+    toc_items = "".join(f'<li class="toc-part">{html.escape(t)}</li>' if i == "part" else f'<li><a href="#{i}">{html.escape(t)}</a></li>' for i, t in toc)
     return f"""<!doctype html>
 <html lang="en" data-theme="candy" data-font="serif">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fine-tune Qwen locally · a LoRA guide for Mac and PC</title>
+<title>Qwen, locally · run it, fine-tune it, understand abliteration</title>
 <meta name="description" content="{desc}">
-<meta property="og:title" content="Fine-tune Qwen locally · a LoRA guide for Mac and PC">
+<meta property="og:title" content="Qwen, locally · run it, fine-tune it, understand abliteration">
 <meta property="og:description" content="{desc}">
 <meta property="og:url" content="https://lovespark.love/qwen-fine-tuning-guide/">
 <meta name="theme-color" content="#fbf3f5">
@@ -137,12 +141,13 @@ def build():
 <header class="topbar">
   <a class="wordmark" href="#top" aria-label="Fine-tune Qwen locally, back to top">
     <img src="{mascot}" alt="Sparky, the LoveSpark wolf mascot">
-    <span class="wordmark-text"><span class="wordmark-title">Qwen Fine-Tuning</span><span class="wordmark-sub">A LoveSpark guide · Oct 2026</span></span>
+    <span class="wordmark-text"><span class="wordmark-title">Qwen, locally</span><span class="wordmark-sub">A LoveSpark guide · Oct 2026</span></span>
   </a>
   <nav class="topnav" aria-label="Main navigation">
-    <a href="#mac">Mac path</a>
-    <a href="#nvidia">NVIDIA path</a>
-    <a href="#trouble">Troubleshooting</a>
+    <a href="#run-basics">Run</a>
+    <a href="#basics">Fine-tune</a>
+    <a href="#abl-what">Abliteration</a>
+    <a href="#trouble">Reference</a>
     <div class="appearance">
       <button id="themeBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="themeMenu">Change Theme</button>
       <div id="themeMenu" role="menu" aria-label="Theme and reading font" hidden>
@@ -156,14 +161,15 @@ def build():
 
 <section class="hero" id="top" aria-labelledby="hero-title">
   <div class="hero-copy">
-    <p class="eyebrow"><span class="rule"></span>A local LoRA guide</p>
-    <h1 id="hero-title">Fine-tune<br>Qwen locally</h1>
-    <p class="hero-dates">Qwen3.5 0.8B – 9B · checked October 2026</p>
-    <p class="hero-description">From one gradient step to a working LoRA adapter you can serve on your own machine, on an Apple Silicon Mac or an NVIDIA PC. No paid API, no accounts, nothing leaves your computer.</p>
+    <p class="eyebrow"><span class="rule"></span>A guide to local models</p>
+    <h1 id="hero-title">Qwen,<br>locally</h1>
+    <p class="hero-dates">Run it · fine-tune it · understand abliteration</p>
+    <p class="hero-description">A first-principles guide to Qwen3.5 on your own machine, in three parts: choose and run a local model, fine-tune it with LoRA, and understand what abliteration does and costs. Mac, Linux or Windows. No paid API, no accounts, nothing leaves your computer.</p>
     <div class="hero-actions">
       <a class="button" href="#start">Start reading <span aria-hidden="true">→</span></a>
-      <a class="text-link" href="#mac">Mac path →</a>
-      <a class="text-link" href="#nvidia">NVIDIA path →</a>
+      <a class="text-link" href="#run-basics">Part 1 · Run →</a>
+      <a class="text-link" href="#basics">Part 2 · Fine-tune →</a>
+      <a class="text-link" href="#abl-what">Part 3 · Abliteration →</a>
     </div>
   </div>
   <figure class="plaque" aria-label="Three rules this guide keeps coming back to">
@@ -182,7 +188,7 @@ def build():
 <footer>
   <div class="foot-inner">
     <img src="{mascot}" alt="Sparky, the LoveSpark wolf mascot">
-    <div>One self-contained page: no server, no tracking, nothing leaves your machine. Built from <code>source/qwen-fine-tuning-guide.md</code> · MIT licensed · companion to <a href="https://lovespark.love/" rel="noopener">LoveSpark</a>'s <a href="https://github.com/Joona-t/qwen-local-guide" rel="noopener">Qwen Local guide</a>.</div>
+    <div>One self-contained page: no server, no tracking, nothing leaves your machine. Built from <code>source/qwen-guide.md</code> · MIT licensed · companion to <a href="https://lovespark.love/" rel="noopener">LoveSpark</a>'s <a href="https://github.com/Joona-t/qwen-local-guide" rel="noopener">Qwen Local guide</a>.</div>
   </div>
 </footer>
 
