@@ -1,0 +1,22 @@
+<div class="calc" id="calc-budget">
+  <h3>Will the whole stack fit on 16 GB?</h3>
+  <p class="csub">A 16 GB Mac keeps about 4 GB for macOS, leaving a usable window of roughly 9–12 GB. The model, the retrieval stack and the KV cache all have to land inside it.</p>
+  <div class="calc__row">
+    <div class="field"><label for="bmodel">Generative model</label>
+      <select id="bmodel"><option value="3.4">qwen3.5:4b, 3.4 GB</option><option value="6.6" selected>qwen3.5:9b, 6.6 GB</option><option value="custom">Custom resident size…</option></select></div>
+    <div class="field" id="bcustomWrap" hidden><label for="bcustom">Custom resident (GB)</label><input type="number" id="bcustom" min="0.5" max="14" step="0.1" value="9"></div>
+    <div class="field"><label for="bctx">Context window</label>
+      <select id="bctx"><option value="short">Short, 4–8K (recommended)</option><option value="long">Long, 32K and up</option></select></div>
+  </div>
+  <div class="checks">
+    <label class="check"><input type="checkbox" id="brag" checked><span>Run the retrieval stack too (embedder ≲1 GB + Qdrant ~0.3 GB)</span></label>
+    <label class="check"><input type="checkbox" id="bfa"><span>Flash attention + <code>q8_0</code> KV cache (shrinks a long-context KV cache)</span></label>
+  </div>
+  <div class="calc__out" aria-live="polite">
+    <div class="budget" role="img" id="budgetBar" aria-label="Memory budget"><span class="budget__seg budget__seg--os" id="bsOs"></span><span class="budget__seg budget__seg--model" id="bsModel"></span><span class="budget__seg budget__seg--rag" id="bsRag"></span><span class="budget__seg budget__seg--kv" id="bsKv"></span></div>
+    <div class="budget__legend" aria-hidden="true"><span><i class="budget__seg--os"></i>macOS</span><span><i class="budget__seg--model"></i>model</span><span><i class="budget__seg--rag"></i>retrieval</span><span><i class="budget__seg--kv"></i>KV + runtime</span><span><i class="budget__free"></i>free</span></div>
+    <div class="bignum" id="budgetOut">8.8 <small>GB workload</small></div>
+    <div class="outline" id="budgetNote">Fits comfortably.</div>
+  </div>
+  <p class="calc__caveat"><strong>Planning bands, not a measurement.</strong> The KV cache is shown as the 1–2 GB band the sizes above imply, not a per-token formula. Watch your memory monitor on the real machine; on a 24 GB or 32 GB machine the same arithmetic gives you much more room.</p>
+</div>

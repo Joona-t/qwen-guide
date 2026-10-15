@@ -42,6 +42,13 @@ ok(JSON.stringify(M.QUIZ) === '["b","b","a","b"]', 'quiz key');
 for (let a = 0; a <= 10; a++) ok(M.wiredProgram(a) === M.wiredNetwork(a), `handwired disagrees at a=${a}`);
 for (let a = 0; a <= 10; a += 0.25) ok(M.wiredGate(a) >= 0 && M.wiredGate(a) <= 1, 'gate outside [0,1]');
 near(M.wiredGate(4.5), 0.5); near(M.wiredNetwork(4.5), 11); ok(M.wiredProgram(4.5) === 10, 'program at 4.5');
+// ported calculators (from the retired qwen-local-guide)
+ok(Math.round(M.decode(120, 6.6)) === 18, 'decode M4 9B'); ok(Math.round(M.decode(120, 3.4)) === 35, 'decode M4 4B'); ok(Math.round(M.decode(153, 6.6)) === 23, 'decode M6 9B (matches Part 1 prose)');
+near(M.budget(6.6, true, false, false).workload, 8.8); ok(M.budget(6.6, true, false, false).verdict === 'ok', 'budget 9B+RAG short');
+near(M.budget(6.6, true, true, false).workload, 9.8); ok(M.budget(6.6, true, true, false).verdict === 'tight', 'budget 9B+RAG long');
+near(M.budget(6.6, true, true, true).kv, 1.5); ok(M.budget(9, true, true, false).verdict === 'over', 'budget 9GB+RAG long');
+ok(M.BUDGET.os + M.BUDGET.usableHigh === M.BUDGET.total, 'budget bands add up');
+ok(Math.round(M.chain(0.95, 8) * 100) === 66, 'compounding: 0.95^8 ≈ 66%');
 near(M.wiredNetwork(4.25), 11.5); near(M.wiredNetwork(4.75), 10.5);
 for (const a of [-3, 0, 3.9, 4, 5, 5.1, 10, 1e6]) ok(M.wiredProgram(a) === M.wiredNetwork(a), `handwired disagrees at a=${a}`);
 
@@ -49,7 +56,7 @@ for (const a of [-3, 0, 3.9, 4, 5, 5.1, 10, 1e6]) ok(M.wiredProgram(a) === M.wir
 const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
 ok(ids.length === new Set(ids).size, 'duplicate ids');
 for (const [, id] of html.matchAll(/href="#([^"]+)"/g)) ok(ids.includes(id), `missing anchor #${id}`);
-const WIDGET_IDS = { gradient: 'calc-step', handwired: 'calc-wired', lora: 'calc-lora', memory: 'calc-mem', quiz: 'quizForm' };
+const WIDGET_IDS = { decode: 'calc-decode', budget: 'calc-budget', reliability: 'calc-rel', gradient: 'calc-step', handwired: 'calc-wired', lora: 'calc-lora', memory: 'calc-mem', quiz: 'quizForm' };
 for (const [n, id] of Object.entries(WIDGET_IDS)) ok(!md.includes(`widget:${n}`) || html.includes(`id="${id}"`), `widget ${n} not rendered`);
 ok(!/<(?:script|img|iframe)\b[^>]*\bsrc\s*=\s*["']https?:/i.test(html), 'external script/img');
 ok(!/<link\b[^>]*\bhref\s*=\s*["']https?:/i.test(html), 'external stylesheet');

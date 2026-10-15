@@ -2,6 +2,27 @@
 
 Newest first.
 
+## ITER-007 — Absorb Qwen Local into this guide; four parts (2026-10-15)
+- **Why:** two public Qwen guides overlapped (running, fine-tuning and abliteration were in both) and linked each
+  other. Joona asked to fold the older `qwen-local-guide` into this one and delete it.
+- **New Part 2, "Build on it":** embeddings and rerankers, retrieval (RAG) and the upgrades past top-k, a Qdrant
+  vector store, shared memory over MCP, the security record and hardening, routing work across a local box, a GPU
+  machine and a hosted model, a week-by-week build order, and a Learn-more list. Fine-tune is now Part 3 and
+  Abliteration Part 4; every cross-reference, the hero, nav, meta description and README follow.
+- **New Part 1 section, "Faster and smaller":** MLX versus llama.cpp, speculative decoding, and quantization past
+  Q4_K_M (Unsloth Dynamic, IQ4_XS, DWQ, the thinking-mode quality cliff, asymmetric KV cache, QAT and ternary).
+- **Calculators ported:** decode-speed ceiling (Part 1), 16 GB stack budget and compounding reliability (Part 2).
+  Math on `FineTuneMath`; `verify.mjs` asserts the doc's own figures (120 ÷ 6.6 ≈ 18, 0.95⁸ ≈ 66%, budget bands).
+- **How it was written:** a workflow drafted each section from the old source with a fidelity skeptic and a reviser
+  per section (every number traced to the old guide; personal context such as named machines and agents removed and
+  generalised). A second check found 4 gaps, all fixed: Ollama's MLX default qualifies the engine verdict, a lost
+  "about", the "BFCL v4 rated Flawed" caveat, and the develop-locally/serve-on-GPU pattern.
+- **BUG-006:** the budget checkboxes split into columns at 360px because `.check{display:flex}` treated the inline
+  `<code>` as a flex item. Fix: wrap the label text in a `<span>`.
+- **Verified:** `verify.mjs` PASS (223 checks); 1400px and 360px with no horizontal overflow and no console errors.
+- **Old repo:** `Joona-t/qwen-local-guide` backed up as a git bundle of all branches outside the working tree, then
+  deleted on request.
+
 ## ITER-006 — "A program, written as weights" widget in Part 2 (2026-10-15)
 - **Why:** Part 2 says weights are numbers and that training changes them, but never showed *why* numbers can hold
   behaviour. Cheng Lou's [handwired](https://github.com/chenglou/handwired) (MIT) rewrites ordinary JS control flow

@@ -11,8 +11,17 @@
   var wiredProgram = function(a){ return a>4 ? 10 : 12; };
   var wiredGate = function(a){ return relu(a-4) - relu(a-5); };
   var wiredNetwork = function(a){ var g=wiredGate(a); return g*10 + (1-g)*12; };
+  /* ported from the retired qwen-local-guide: decode ceiling, 16 GB budget bands, compounding reliability */
+  var decode = function(bw,gb){ return bw/gb; };
+  var BUDGET = {os:4, usableLow:9, usableHigh:12, total:16, rag:1.2};
+  var budget = function(model,rag,longCtx,fa){
+    var kv = longCtx ? (fa ? 1.5 : 2) : 1, w = model + (rag ? BUDGET.rag : 0) + kv;
+    return {kv:kv, rag:rag ? BUDGET.rag : 0, workload:w, verdict: w<=BUDGET.usableLow ? 'ok' : w<=BUDGET.usableHigh ? 'tight' : 'over'};
+  };
+  var chain = function(p,n){ return Math.pow(p,n); };
   window.FineTuneMath = Object.freeze({sigmoid:sigmoid, loss:loss, adapter:adapter, weights:weights, QUIZ:QUIZ,
-    relu:relu, wiredProgram:wiredProgram, wiredGate:wiredGate, wiredNetwork:wiredNetwork});
+    relu:relu, wiredProgram:wiredProgram, wiredGate:wiredGate, wiredNetwork:wiredNetwork,
+    decode:decode, budget:budget, BUDGET:BUDGET, chain:chain});
 
   if($('calc-step')){
     var w=-2, steps=0, hist=[];
@@ -50,6 +59,47 @@
     };
     $('wiredA').addEventListener('input',updWired); $('wiredA').addEventListener('change',updWired);
     updWired();
+  }
+
+  if($('calc-decode')){
+    var updDecode = function(){
+      var custom=$('msize').value==='custom'; $('msizeCustomWrap').hidden=!custom;
+      var bw=Number($('dev').value), gb=custom ? clamp($('msizeCustom').value,0.5,200,6.6) : Number($('msize').value), t=decode(bw,gb);
+      $('decodeOut').innerHTML='~'+Math.round(t)+' <small>tokens/s ceiling</small>';
+      $('decodeNote').textContent=bw.toLocaleString('en-US')+' ÷ '+gb+' ≈ '+Math.round(t)+' tokens per second, before overhead. Plan for roughly '+Math.round(t*0.77)+'–'+Math.round(t*0.88)+'.';
+    };
+    ['dev','msize','msizeCustom'].forEach(function(id){ $(id).addEventListener('input',updDecode); $(id).addEventListener('change',updDecode); });
+    updDecode();
+  }
+
+  if($('calc-budget')){
+    var pct = function(gb){ return (gb/BUDGET.total*100).toFixed(2)+'%'; };
+    var updBudget = function(){
+      var custom=$('bmodel').value==='custom'; $('bcustomWrap').hidden=!custom;
+      var m=custom ? clamp($('bcustom').value,0.5,14,9) : Number($('bmodel').value);
+      var b=budget(m,$('brag').checked,$('bctx').value==='long',$('bfa').checked);
+      $('bsOs').style.width=pct(BUDGET.os); $('bsModel').style.width=pct(m); $('bsRag').style.width=pct(b.rag); $('bsKv').style.width=pct(b.kv);
+      $('budgetBar').setAttribute('aria-label','macOS '+BUDGET.os+' GB, model '+m+' GB, retrieval '+b.rag+' GB, KV and runtime '+b.kv+' GB, workload '+b.workload.toFixed(1)+' GB of a 9 to 12 GB usable window');
+      $('budgetOut').innerHTML=b.workload.toFixed(1)+' <small>GB workload</small>';
+      $('budgetNote').textContent = (b.verdict==='ok' ? 'Fits comfortably: within the conservative '+BUDGET.usableLow+' GB floor.'
+        : b.verdict==='tight' ? 'Tight: inside the '+BUDGET.usableLow+'–'+BUDGET.usableHigh+' GB band only at the optimistic end. Keep the context short.'
+        : 'Over: above ~'+BUDGET.usableHigh+' GB. Use a smaller model, drop retrieval, or shorten the context.')
+        +' Model '+m+' + retrieval '+b.rag+' + KV '+b.kv+' = '+b.workload.toFixed(1)+' GB.';
+    };
+    ['bmodel','bcustom','bctx','brag','bfa'].forEach(function(id){ $(id).addEventListener('input',updBudget); $(id).addEventListener('change',updBudget); });
+    updBudget();
+  }
+
+  if($('calc-rel')){
+    var updRel = function(){
+      var p=Number($('pcall').value)/100, n=Math.round(clamp($('steps').value,1,20,8)), c=chain(p,n)*100;
+      $('stepsVal').textContent=n;
+      $('relOut').innerHTML='~'+Math.round(c)+'% <small>succeed end to end</small>';
+      $('relBar').style.width=Math.max(1,c)+'%';
+      $('relNote').textContent=Math.round(p*1000)/10+'% per call over '+n+' step'+(n===1?'':'s')+' lands about '+Math.round(c)+'% of the time.';
+    };
+    ['pcall','steps'].forEach(function(id){ $(id).addEventListener('input',updRel); $(id).addEventListener('change',updRel); });
+    updRel();
   }
 
   if($('calc-lora')){

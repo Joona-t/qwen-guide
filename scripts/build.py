@@ -115,7 +115,7 @@ def build():
         sections.append(f'<section id="{a["id"]}">\n      <p class="kicker"><span class="rule"></span>{html.escape(a["kicker"])}</p>\n      <h2>{inline(h2)}</h2>\n      {blocks(rest.split(chr(10)))}\n    </section>')
         toc.append((a["id"], a.get("toc", h2)))
     mascot = (T / "mascot.datauri").read_text(encoding="utf-8").strip()
-    desc = "A first-principles, offline guide to local Qwen models in three parts: run one on a Mac, Linux or Windows; fine-tune it with LoRA; understand abliteration, its costs and your responsibilities. With interactive calculators and verified sources. No paid API."
+    desc = "A first-principles, offline guide to local Qwen models in four parts: run one on a Mac, Linux or Windows; build retrieval and shared agent memory on it; fine-tune it with LoRA; understand abliteration, its costs and your responsibilities. With interactive calculators and verified sources. No paid API."
     css = (T / "fonts.css").read_text(encoding="utf-8") + (T / "style.css").read_text(encoding="utf-8")
     themes = "".join(f'<button type="button" role="menuitemradio" aria-checked="false" data-theme="{k}"><span class="swatch" style="background:linear-gradient(135deg,{bg} 50%,{ac} 50%)"></span>{n}</button>' for k, n, bg, ac in THEMES)
     fonts = "".join(f'<button type="button" role="menuitemradio" aria-checked="false" data-font="{k}"><span class="fontpreview" style="{st}" aria-hidden="true">Aa</span>{n}</button>' for k, n, st in FONTS)
@@ -147,6 +147,7 @@ def build():
   </a>
   <nav class="topnav" aria-label="Main navigation">
     <a href="#run-basics">Run</a>
+    <a href="#embed">Build</a>
     <a href="#basics">Fine-tune</a>
     <a href="#abl-what">Abliteration</a>
     <a href="#trouble">Reference</a>
@@ -165,13 +166,14 @@ def build():
   <div class="hero-copy">
     <p class="eyebrow"><span class="rule"></span>A guide to local models</p>
     <h1 id="hero-title">Qwen,<br>locally</h1>
-    <p class="hero-dates">Run it · fine-tune it · understand abliteration</p>
-    <p class="hero-description">A first-principles guide to Qwen3.5 on your own machine, in three parts: choose and run a local model, fine-tune it with LoRA, and understand what abliteration does and costs. Mac, Linux or Windows. No paid API, no accounts, nothing leaves your computer.</p>
+    <p class="hero-dates">Run it · build on it · fine-tune it · understand abliteration</p>
+    <p class="hero-description">A first-principles guide to Qwen3.5 on your own machine, in four parts: choose and run a local model, build retrieval and shared memory for your agents on it, fine-tune it with LoRA, and understand what abliteration does and costs. Mac, Linux or Windows. No paid API, no accounts, nothing leaves your computer.</p>
     <div class="hero-actions">
       <a class="button" href="#start">Start reading <span aria-hidden="true">→</span></a>
       <a class="text-link" href="#run-basics">Part 1 · Run →</a>
-      <a class="text-link" href="#basics">Part 2 · Fine-tune →</a>
-      <a class="text-link" href="#abl-what">Part 3 · Abliteration →</a>
+      <a class="text-link" href="#embed">Part 2 · Build →</a>
+      <a class="text-link" href="#basics">Part 3 · Fine-tune →</a>
+      <a class="text-link" href="#abl-what">Part 4 · Abliteration →</a>
     </div>
   </div>
   <figure class="plaque" aria-label="Three rules this guide keeps coming back to">
@@ -190,7 +192,7 @@ def build():
 <footer>
   <div class="foot-inner">
     <img src="{mascot}" alt="Sparky, the LoveSpark wolf mascot">
-    <div>One self-contained page: no server, no tracking, nothing leaves your machine. Built from <code>source/qwen-guide.md</code> · MIT licensed · companion to <a href="https://lovespark.love/" rel="noopener">LoveSpark</a>'s <a href="https://github.com/Joona-t/qwen-local-guide" rel="noopener">Qwen Local guide</a>.</div>
+    <div>One self-contained page: no server, no tracking, nothing leaves your machine. Built from <code>source/qwen-guide.md</code> · MIT licensed · a <a href="https://lovespark.love/" rel="noopener">LoveSpark</a> guide · <a href="https://github.com/Joona-t/qwen-guide" rel="noopener">source on GitHub</a>.</div>
   </div>
 </footer>
 

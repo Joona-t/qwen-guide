@@ -1,0 +1,15 @@
+<div class="calc" id="calc-rel">
+  <h3>Why multi-step agent work compounds</h3>
+  <p class="csub">If each tool call succeeds with probability <code>p</code>, a chain of <code>n</code> calls succeeds with <code>pⁿ</code>.</p>
+  <div class="calc__row">
+    <div class="field"><label for="pcall">Per-call success</label>
+      <select id="pcall"><option value="95">95%, an optimistic illustration</option><option value="66.1">66.1%, Qwen3.5-9B on BFCL</option><option value="50.3">50.3%, Qwen3.5-4B on BFCL</option></select></div>
+    <div class="field field--range"><label for="steps">Steps in the chain = <span id="stepsVal">8</span></label><input type="range" id="steps" min="1" max="20" step="1" value="8"></div>
+  </div>
+  <div class="calc__out" aria-live="polite">
+    <div class="bignum" id="relOut">~66% <small>succeed end to end</small></div>
+    <div class="meter" aria-hidden="true"><span id="relBar" style="width:66%"></span></div>
+    <div class="outline" id="relNote">95% per call over 8 steps lands about 66% of the time.</div>
+  </div>
+  <p class="calc__caveat"><strong>A simplification.</strong> Real failures aren't independent, and a validator or retry step changes the picture. BFCL scores are a relative signal, not a per-call probability. The point holds: long unsupervised chains on a small local model fail often, so keep approval gates in the loop.</p>
+</div>
