@@ -3,7 +3,7 @@
   <p class="csub">Every generated token reads the whole model from memory, so <code>tokens per second ≈ memory bandwidth ÷ model size</code>.</p>
   <div class="calc__row">
     <div class="field"><label for="dev">Device (memory bandwidth)</label>
-      <select id="dev"><option value="120">Base M4 Mac, 120 GB/s</option><option value="153">Base M6 Mac mini, 153 GB/s</option><option value="273">M4 Pro, 273 GB/s</option><option value="1008">RTX 4090, ~1,008 GB/s</option></select></div>
+      <select id="dev"><option value="120">Base M4 Mac, 120 GB/s</option><option value="153">Base M6 Mac mini, 153 GB/s</option><option value="273">M4 Pro, 273 GB/s</option><option value="936">RTX 3090, ~936 GB/s (derived)</option><option value="1008">RTX 4090, ~1,008 GB/s</option><option value="1792">RTX 5090, ~1,792 GB/s (derived)</option></select></div>
     <div class="field"><label for="msize">Model (resident size)</label>
       <select id="msize"><option value="6.6">qwen3.5:9b, 6.6 GB</option><option value="3.4">qwen3.5:4b, 3.4 GB</option><option value="custom">Custom…</option></select></div>
     <div class="field" id="msizeCustomWrap" hidden><label for="msizeCustom">Custom size (GB)</label><input type="number" id="msizeCustom" min="0.5" max="200" step="0.1" value="6.6"></div>

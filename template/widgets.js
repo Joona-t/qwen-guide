@@ -19,9 +19,19 @@
     return {kv:kv, rag:rag ? BUDGET.rag : 0, workload:w, verdict: w<=BUDGET.usableLow ? 'ok' : w<=BUDGET.usableHigh ? 'tight' : 'over'};
   };
   var chain = function(p,n){ return Math.pow(p,n); };
+  /* fit + decode ceiling (research.md §2): usable = VRAM − ~1 GB per card, or ~75% of Mac unified memory; KV only where the per-token constant is verified */
+  var FIT = {gpuReserve:1, macShare:0.75, tightShare:0.9, q8:0.5, unknownKvHeadroom:5};   // with no verified KV constant, under 5 GB of headroom counts as tight
+  var decodeCeiling = function(bw,gb){ return gb>0 ? bw/gb : 0; };
+  var fitCalc = function(o){
+    var cards=o.cards||1, usable = o.kind==='mac' ? o.mem*FIT.macShare : o.mem - FIT.gpuReserve*cards;
+    var kv = o.kvKiB ? o.ctx*o.kvKiB*1024*(o.kvType==='q8_0' ? FIT.q8 : 1)/1e9 : null;
+    var need = o.model + (kv||0);
+    return {usable:usable, reserved:o.mem-usable, weights:o.model, kv:kv, need:need,
+      verdict: need>usable ? 'no' : (kv===null ? (usable-need>=FIT.unknownKvHeadroom ? 'fits' : 'tight') : (need<=usable*FIT.tightShare ? 'fits' : 'tight'))};
+  };
   window.FineTuneMath = Object.freeze({sigmoid:sigmoid, loss:loss, adapter:adapter, weights:weights, QUIZ:QUIZ,
     relu:relu, wiredProgram:wiredProgram, wiredGate:wiredGate, wiredNetwork:wiredNetwork,
-    decode:decode, budget:budget, BUDGET:BUDGET, chain:chain});
+    decode:decode, budget:budget, BUDGET:BUDGET, chain:chain, FIT:FIT, fitCalc:fitCalc, decodeCeiling:decodeCeiling});
 
   if($('calc-step')){
     var w=-2, steps=0, hist=[];
@@ -66,7 +76,7 @@
       var custom=$('msize').value==='custom'; $('msizeCustomWrap').hidden=!custom;
       var bw=Number($('dev').value), gb=custom ? clamp($('msizeCustom').value,0.5,200,6.6) : Number($('msize').value), t=decode(bw,gb);
       $('decodeOut').innerHTML='~'+Math.round(t)+' <small>tokens/s ceiling</small>';
-      $('decodeNote').textContent=bw.toLocaleString('en-US')+' ÷ '+gb+' ≈ '+Math.round(t)+' tokens per second, before overhead. Plan for roughly '+Math.round(t*0.77)+'–'+Math.round(t*0.88)+'.';
+      $('decodeNote').textContent=bw.toLocaleString('en-US')+' ÷ '+gb+' ≈ '+Math.round(t)+' tokens per second, before overhead. '+(bw<=273 ? 'Plan for roughly '+Math.round(t*0.77)+'–'+Math.round(t*0.88)+'.' : 'GPU bandwidth here is derived; real runs land lower, so measure.');
     };
     ['dev','msize','msizeCustom'].forEach(function(id){ $(id).addEventListener('input',updDecode); $(id).addEventListener('change',updDecode); });
     updDecode();
@@ -88,6 +98,28 @@
     };
     ['bmodel','bcustom','bctx','brag','bfa'].forEach(function(id){ $(id).addEventListener('input',updBudget); $(id).addEventListener('change',updBudget); });
     updBudget();
+  }
+
+  if($('calc-fit')){
+    var updFit = function(){
+      var hw=$('fhw').value.split('|'), custom=$('fmodel').value==='custom'; $('fcustomWrap').hidden=!custom;
+      var mv=custom ? [clamp($('fcustom').value,0.5,200,19),0,0] : $('fmodel').value.split('|').map(Number);
+      var mem=Number(hw[1]), bw=Number(hw[2]), cards=Number(hw[3]), ctx=Number($('fctx').value);
+      var r=fitCalc({kind:hw[0], mem:mem, cards:cards, model:mv[0], kvKiB:mv[1]||null, ctx:ctx, kvType:$('fkv').value});
+      var total=Math.max(mem, r.reserved+r.need), pc=function(gb){ return (gb/total*100).toFixed(2)+'%'; };
+      $('fsRes').style.width=pc(r.reserved); $('fsModel').style.width=pc(r.weights); $('fsKv').style.width=pc(r.kv||0);
+      var kvTxt = r.kv===null ? 'KV estimate unavailable for this model; leave headroom' : 'KV '+r.kv.toFixed(2)+' GB';
+      $('fitBar').setAttribute('aria-label','Reserved '+r.reserved.toFixed(1)+' GB, weights '+r.weights+' GB, '+kvTxt+', of '+mem+' GB');
+      $('fitOut').innerHTML = r.verdict==='fits' ? 'Fits' : r.verdict==='tight' ? 'Tight' : 'Doesn’t fit';
+      $('fitNote').textContent='Weights '+r.weights+' GB + '+kvTxt+' = '+r.need.toFixed(1)+' GB vs '+r.usable.toFixed(1)+' GB usable ('+mem+' GB minus '+r.reserved.toFixed(1)+' GB reserved).'
+        + (r.verdict==='tight' ? (r.kv===null ? ' Less than 5 GB is left for the KV cache, whose size this calculator doesn\u2019t know for this model: keep the context modest and use q8_0 KV.' : ' Under the limit by less than 10%: shorten the context or use q8_0 KV.') : r.verdict==='no' ? ' Pick a smaller file, a lower quant, or more memory.' : '');
+      var t=decodeCeiling(bw,mv[0]);
+      $('fitSpeed').textContent='Decode ceiling ≈ '+Math.round(t)+' tokens/s ('+bw.toLocaleString('en-US')+' GB/s ÷ '+mv[0]+' GB, derived). Real speed is lower; see Benchmark your machine.'
+        + (mv[2] ? ' This is a MoE model: each token reads only the active experts, so measured speed can beat this dense ceiling.' : '')
+        + (cards>1 ? ' Two cards in layer split take turns per token, so the ceiling uses one card’s bandwidth.' : '');
+    };
+    ['fhw','fmodel','fcustom','fctx','fkv'].forEach(function(id){ $(id).addEventListener('input',updFit); $(id).addEventListener('change',updFit); });
+    updFit();
   }
 
   if($('calc-rel')){
