@@ -1,0 +1,47 @@
+<div class="calc" id="calc-fit">
+  <h3>Will it fit, and how fast can it go?</h3>
+  <p class="csub">Fit is <code>weights + KV cache</code> against usable memory. On a discrete GPU, usable is the VRAM minus about 1 GB. On a Mac, usable is about 75% of unified memory (measured ≈11.8 GiB on a 16 GB machine). Speed ceiling is <code>bandwidth ÷ model size</code>.</p>
+  <div class="calc__row">
+    <div class="field"><label for="fhw">Hardware (memory, bandwidth)</label>
+      <select id="fhw">
+        <option value="nv|12|360|1">RTX 3060 12 GB, 360 GB/s</option>
+        <option value="nv|16|288|1">RTX 4060 Ti 16 GB, 288 GB/s</option>
+        <option value="nv|24|936|1" selected>RTX 3090 24 GB, 936 GB/s</option>
+        <option value="nv|24|1008|1">RTX 3090 Ti 24 GB, ~1,008 GB/s</option>
+        <option value="nv|24|1008|1">RTX 4090 24 GB, 1,008 GB/s</option>
+        <option value="nv|32|1792|1">RTX 5090 32 GB, 1,792 GB/s</option>
+        <option value="nv|48|936|2">2× RTX 3090 48 GB, 936 GB/s per card</option>
+        <option value="mac|16|120|1">Mac 16 GB (base M4), 120 GB/s</option>
+        <option value="mac|24|120|1">Mac 24 GB (base M4), 120 GB/s</option>
+        <option value="mac|32|120|1">Mac 32 GB (base M4), 120 GB/s</option>
+        <option value="mac|64|273|1">Mac 64 GB (M4 Pro), 273 GB/s</option>
+      </select></div>
+    <div class="field"><label for="fmodel">Model (4-bit file size)</label>
+      <select id="fmodel">
+        <option value="3.4|0|0">qwen3.5:4b, 3.4 GB</option>
+        <option value="6.6|0|0">qwen3.5:9b, 6.6 GB</option>
+        <option value="14|0|1">gpt-oss-20b, 14 GB</option>
+        <option value="16.8|0|0">Muse Glimmer 30B Q4_K_M, 16.8 GB</option>
+        <option value="16.8|20|1" selected>Qwen3.6-35B-A3B UD-Q3_K_XL, 16.8 GB</option>
+        <option value="18.3|0|0">Gemma 4 31B Q4_K_M, 18.3 GB</option>
+        <option value="18.3|0|1">GLM-4.7-Flash Q4_K_M, 18.3 GB</option>
+        <option value="18.6|0|1">Qwen3-Coder-30B-A3B Q4_K_M, 18.6 GB</option>
+        <option value="19|0|0">Qwen3.8-27B Q4_K_M, 19 GB</option>
+        <option value="22.1|20|1">Qwen3.6-35B-A3B Q4, 22.1 GB</option>
+        <option value="custom">Custom size…</option>
+      </select></div>
+    <div class="field" id="fcustomWrap" hidden><label for="fcustom">Custom size (GB)</label><input type="number" id="fcustom" min="0.5" max="200" step="0.1" value="19"></div>
+    <div class="field"><label for="fctx">Context length</label>
+      <select id="fctx"><option value="4096">4K tokens</option><option value="8192">8K tokens</option><option value="16384">16K tokens</option><option value="32768" selected>32K tokens</option><option value="65536">64K tokens</option><option value="131072">128K tokens</option></select></div>
+    <div class="field"><label for="fkv">KV cache type</label>
+      <select id="fkv"><option value="f16">f16 (default)</option><option value="q8_0">q8_0 (about half)</option></select></div>
+  </div>
+  <div class="calc__out" aria-live="polite">
+    <div class="budget" role="img" id="fitBar" aria-label="Memory breakdown"><span class="budget__seg budget__seg--os" id="fsRes"></span><span class="budget__seg budget__seg--model" id="fsModel"></span><span class="budget__seg budget__seg--kv" id="fsKv"></span></div>
+    <div class="budget__legend" aria-hidden="true"><span><i class="budget__seg--os"></i>reserved</span><span><i class="budget__seg--model"></i>weights</span><span><i class="budget__seg--kv"></i>KV cache</span><span><i class="budget__free"></i>free</span></div>
+    <div class="bignum" id="fitOut">Fits</div>
+    <div class="outline" id="fitNote"></div>
+    <div class="outline" id="fitSpeed"></div>
+  </div>
+  <p class="calc__caveat"><strong>Estimates, not measurements.</strong> Bandwidths are bus width × data rate (derived), not NVIDIA-published figures. Real decode runs below the ceiling and drops as the context fills; see Benchmark your machine. KV sizes are shown only where the per-token constant is verified (Qwen3.6-35B-A3B: 20 KiB per token at f16, derived from the model config; q8_0 is taken as about half); for other models, leave a few GB of headroom. On two 3090s with the default layer split, each token still crosses one card at a time, so the decode ceiling uses one card's bandwidth, not the sum.</p>
+</div>

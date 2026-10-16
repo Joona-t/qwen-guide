@@ -2,6 +2,37 @@
 
 Newest first.
 
+## ITER-008 — v2: RTX 3090 / NVIDIA PCs, depth, and a free learning path (2026-10-16)
+- **Why:** owner feedback: the guide still read as Mac-only ("3090" appeared once, "VRAM" never), wasn't robust
+  enough, and pointed to almost no free learning resources (Karpathy appeared once). An 11-agent audit found 22 gaps
+  (5 P0); `plan.md` set out 12 work packages and `research.md` the verified evidence (79 verified, 8 refuted, 31
+  downgraded). Implemented with the owner's four defaults: learning path in Reference, 3090 speeds as cited
+  estimates, Qwen3-Embedding-0.6B at 1024 dims end to end, AMD/Intel/CPU as a router row only.
+- **New sections:** Pick your path (hardware + goal router in the intro); Running on an NVIDIA PC (cards table with the
+  llama.cpp #15013 scoreboard, what fits on one 3090, decode ceilings, prefill vs decode, driver floor, engine ladder,
+  power limiting, two 3090s, smaller cards, buying used); Tokens, context and the KV cache (formula, chat templates,
+  quant formats by GPU generation); Benchmark your machine; Route the work (split from Harden); A free learning path
+  (tracks 0–6 + stay current, Karpathy's Zero to Hero at the centre); Glossary.
+- **Expanded:** Install (Mac / Linux systemd / Windows settings, WSL2 rules, 24 GB NVIDIA set), Other runtimes (PC
+  table), Thinking mode (+ sampling from the official card), Use it from code (+ structured output, tool calling,
+  images, compare-models harness, speculative decoding on a GPU), Part 2 (one embedder end to end, single-24-GB-PC
+  budget, `--gpus all`, NVIDIA build-order alternatives, Learn-more links), Part 3 (5090 / 2×24 GB / 27B rows,
+  per-card script comments), Troubleshooting (Area column, 12 new rows), Sources (hardware and PC runtimes).
+- **New widget:** `fit.html`, a fit and decode-ceiling calculator for 11 NVIDIA and Mac presets; decode widget gains
+  RTX 3090 and 5090 presets.
+- **Process:** 9 writers returned edits as data (59 applied, 0 anchor failures); 4 skeptics then checked 198 claims and
+  found 7 problems. 6 were fixed: the Linux/Windows model paths, the dual-3090 memory rule, the Vulkan/AMD wording, and
+  Ollama's default context (it is VRAM-dependent, 32K on a 24 GB card, per docs.ollama.com/context-length; the FAQ's
+  4096 is stale). A wrong cross-reference was also fixed. One was skipped: a list-indent change that suits CommonMark
+  but would break this guide's own renderer.
+- **BUG-006:** the fit calculator called Gemma 4 31B "Fits" on a 3090 although the guide calls it the tightest fit.
+  Root cause: with no verified KV constant, the KV cache counted as zero. Fix: an unknown KV with under 5 GB of
+  headroom is "Tight", with a note; two tests added.
+- **BUG-007:** a generic `C:\Users\%username%` path tripped the home-path guard; replaced with `%USERPROFILE%`.
+- **Verified:** `verify.mjs` PASS (310 checks, up from 223); all 150 URLs load (localhost samples excepted; the
+  OWASP page blocks scripts but loads in a browser); 48 sections, no broken in-page anchors, no console errors, no
+  horizontal overflow at 1400px or 360px.
+
 ## ITER-007 — Absorb Qwen Local into this guide; four parts (2026-10-15)
 - **Why:** two public Qwen guides overlapped (running, fine-tuning and abliteration were in both) and linked each
   other. Joona asked to fold the older `qwen-local-guide` into this one and delete it.

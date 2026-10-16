@@ -1,6 +1,6 @@
 # Plan: major improvements to the Qwen guide
 
-> **Status:** DRAFT for Joona's annotation. Add notes inline (e.g. `> JOONA: …`) and I'll revise. **Do not implement yet — awaiting "implement it all".** Evidence for every item is in `research.md`.
+> **Status:** IMPLEMENTED 2026-10-16 (ITER-008), after Joona said "implement it all" with the recommended defaults for the four decisions in §5. Evidence for every item is in `research.md`.
 
 ## 1. Goal
 
@@ -210,4 +210,4 @@ The guide is written for a 16 GB Mac. The owner wants three changes. First, RTX 
 
 ## 6. Status
 
-Do not implement yet. Awaiting "implement it all".
+Implemented 2026-10-16 with the recommended defaults (see ITER-008 in BUGS_AND_ITERATIONS.md).

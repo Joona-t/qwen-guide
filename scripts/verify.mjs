@@ -50,13 +50,25 @@ near(M.budget(6.6, true, true, true).kv, 1.5); ok(M.budget(9, true, true, false)
 ok(M.BUDGET.os + M.BUDGET.usableHigh === M.BUDGET.total, 'budget bands add up');
 ok(Math.round(M.chain(0.95, 8) * 100) === 66, 'compounding: 0.95^8 ≈ 66%');
 near(M.wiredNetwork(4.25), 11.5); near(M.wiredNetwork(4.75), 10.5);
+// fit + decode ceiling (research.md §2)
+{ const r = M.fitCalc({ kind: 'nv', mem: 24, cards: 1, model: 19, kvKiB: 64, ctx: 8192, kvType: 'q8_0' });
+  ok(r.verdict === 'fits', '3090 + 19 GB at 8K q8_0 fits'); near(r.usable, 23); near(r.kv, 8192 * 64 * 1024 * 0.5 / 1e9); }
+ok(M.fitCalc({ kind: 'mac', mem: 16, cards: 1, model: 19, kvKiB: null, ctx: 8192, kvType: 'f16' }).verdict === 'no', 'Mac 16 GB + 19 GB does not fit');
+near(M.fitCalc({ kind: 'mac', mem: 16, cards: 1, model: 6.6, kvKiB: null, ctx: 8192, kvType: 'f16' }).usable, 12);
+ok(M.fitCalc({ kind: 'nv', mem: 24, cards: 1, model: 19, kvKiB: null, ctx: 32768, kvType: 'f16' }).kv === null, 'no KV constant -> kv null');
+near(M.fitCalc({ kind: 'nv', mem: 48, cards: 2, model: 19, kvKiB: null, ctx: 8192, kvType: 'f16' }).usable, 46);
+ok(M.fitCalc({ kind: 'nv', mem: 24, cards: 1, model: 22.1, kvKiB: 20, ctx: 8192, kvType: 'f16' }).verdict === 'tight', '35B-A3B Q4 on 3090 is tight');
+near(M.decodeCeiling(936, 19), 936 / 19); ok(Math.abs(M.decodeCeiling(936, 19) - 49.3) < 0.05, 'decode 3090 19 GB ≈ 49.3');
 for (const a of [-3, 0, 3.9, 4, 5, 5.1, 10, 1e6]) ok(M.wiredProgram(a) === M.wiredNetwork(a), `handwired disagrees at a=${a}`);
 
 // 3. page integrity
 const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
 ok(ids.length === new Set(ids).size, 'duplicate ids');
 for (const [, id] of html.matchAll(/href="#([^"]+)"/g)) ok(ids.includes(id), `missing anchor #${id}`);
-const WIDGET_IDS = { decode: 'calc-decode', budget: 'calc-budget', reliability: 'calc-rel', gradient: 'calc-step', handwired: 'calc-wired', lora: 'calc-lora', memory: 'calc-mem', quiz: 'quizForm' };
+// fit: unknown KV with < 5 GB headroom is 'tight' (Gemma 4 31B on a 3090), >= 5 GB is 'fits'
+ok(M.fitCalc({kind:'gpu', mem:24, cards:1, model:18.3, kvKiB:null, ctx:16384, kvType:'q8_0'}).verdict === 'tight', 'fit: unknown-KV tight');
+ok(M.fitCalc({kind:'gpu', mem:24, cards:1, model:14, kvKiB:null, ctx:16384, kvType:'q8_0'}).verdict === 'fits', 'fit: unknown-KV fits');
+const WIDGET_IDS = { decode: 'calc-decode', budget: 'calc-budget', reliability: 'calc-rel', gradient: 'calc-step', handwired: 'calc-wired', lora: 'calc-lora', memory: 'calc-mem', quiz: 'quizForm', fit: 'calc-fit' };
 for (const [n, id] of Object.entries(WIDGET_IDS)) ok(!md.includes(`widget:${n}`) || html.includes(`id="${id}"`), `widget ${n} not rendered`);
 ok(!/<(?:script|img|iframe)\b[^>]*\bsrc\s*=\s*["']https?:/i.test(html), 'external script/img');
 ok(!/<link\b[^>]*\bhref\s*=\s*["']https?:/i.test(html), 'external stylesheet');
