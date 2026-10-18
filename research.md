@@ -2,7 +2,7 @@
 
 > **Status:** evidence base for `plan.md`, compiled 2026-10-16 by an 11-agent audit (4 auditors over `source/qwen-guide.md`, 3 web scouts, 3 adversarial skeptics, 1 planner). 79 claims verified, 8 refuted, 31 downgraded. Spot-checked by hand afterwards: the llama.cpp RTX 3090 scoreboard (161.89 t/s tg128 with FA, Llama 2 7B Q4_0), the llama-server default port (9931), nanoGPT's deprecation in favour of nanochat, and 16 key resource links (all HTTP 200).
 
-Source: `/Users/darkfire/qwen-guide/source/qwen-guide.md` (1,177 lines). Four auditors looked at it: hardware, depth, learning resources, and structure. Three scout-and-skeptic pairs checked the facts. Only skeptic-verified facts appear below. Anything marked UNCERTAIN must be labelled as uncertain in the guide, or left out.
+Source: `~/qwen-guide/source/qwen-guide.md` (1,177 lines). Four auditors looked at it: hardware, depth, learning resources, and structure. Three scout-and-skeptic pairs checked the facts. Only skeptic-verified facts appear below. Anything marked UNCERTAIN must be labelled as uncertain in the guide, or left out.
 
 ## 1. Audit findings (deduplicated)
 
