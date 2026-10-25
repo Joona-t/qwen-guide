@@ -28,7 +28,9 @@
   menu.querySelectorAll('button[data-font]').forEach(function(b){ b.addEventListener('click', function(){ apply('font', b.dataset.font); }); });
   document.addEventListener('click', function(){ if(!menu.hidden) openMenu(false); });
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !menu.hidden){ openMenu(false); btn.focus(); } });
-  apply('theme', Persist.get('qft-theme') || 'candy');
+  // 'candy' was renamed 'bubblegum' on 2026-10-25; apply() re-saves the new name.
+  var savedTheme = Persist.get('qft-theme');
+  apply('theme', savedTheme === 'candy' ? 'bubblegum' : (savedTheme || 'bubblegum'));
   apply('font', Persist.get('qft-font') || 'serif');
 
   /* ---- Copy buttons on code blocks ---- */

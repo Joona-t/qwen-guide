@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="candy" data-font="serif">
+<html lang="en" data-theme="bubblegum" data-font="serif">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -38,7 +38,7 @@
 }
 
 /* ---------- themes (all text pairs ≥ 4.8:1, checked) ---------- */
-:root, :root[data-theme="candy"] {
+:root, :root[data-theme="bubblegum"] {
   --paper: #fbf3f5; --paper-deep: #f5e6ec; --wash: #f1dee6;
   --ink: #2b1b25; --ink-soft: #4a3442; --muted: #6b5262;
   --line: #ead4dd; --line-strong: #d4b3c2;
@@ -380,7 +380,7 @@ footer { border-top: 1px solid var(--line); }
     <div class="appearance">
       <button id="themeBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="themeMenu">Change Theme</button>
       <div id="themeMenu" role="menu" aria-label="Theme and reading font" hidden>
-        <p class="menu-label">Theme</p><button type="button" role="menuitemradio" aria-checked="false" data-theme="candy"><span class="swatch" style="background:linear-gradient(135deg,#fbf3f5 50%,#a52f66 50%)"></span>Candy</button><button type="button" role="menuitemradio" aria-checked="false" data-theme="retro"><span class="swatch" style="background:linear-gradient(135deg,#fdeef4 50%,#b8175a 50%)"></span>Retro Pink</button><button type="button" role="menuitemradio" aria-checked="false" data-theme="noir"><span class="swatch" style="background:linear-gradient(135deg,#17131b 50%,#f09cc4 50%)"></span>Dark Noir</button><button type="button" role="menuitemradio" aria-checked="false" data-theme="beige"><span class="swatch" style="background:linear-gradient(135deg,#f3eee4 50%,#9c4a2b 50%)"></span>Beige Paper</button>
+        <p class="menu-label">Theme</p><button type="button" role="menuitemradio" aria-checked="false" data-theme="bubblegum"><span class="swatch" style="background:linear-gradient(135deg,#fbf3f5 50%,#a52f66 50%)"></span>Bubblegum</button><button type="button" role="menuitemradio" aria-checked="false" data-theme="retro"><span class="swatch" style="background:linear-gradient(135deg,#fdeef4 50%,#b8175a 50%)"></span>Retro Pink</button><button type="button" role="menuitemradio" aria-checked="false" data-theme="noir"><span class="swatch" style="background:linear-gradient(135deg,#17131b 50%,#f09cc4 50%)"></span>Dark Noir</button><button type="button" role="menuitemradio" aria-checked="false" data-theme="beige"><span class="swatch" style="background:linear-gradient(135deg,#f3eee4 50%,#9c4a2b 50%)"></span>Beige Paper</button>
         <hr>
         <p class="menu-label">Reading font</p><button type="button" role="menuitemradio" aria-checked="false" data-font="serif"><span class="fontpreview" style="font-family:var(--serif)" aria-hidden="true">Aa</span>Serif</button><button type="button" role="menuitemradio" aria-checked="false" data-font="sans"><span class="fontpreview" style="font-family:var(--sans)" aria-hidden="true">Aa</span>Sans</button><button type="button" role="menuitemradio" aria-checked="false" data-font="dyslexic"><span class="fontpreview" style="font-family:var(--dys)" aria-hidden="true">Aa</span>OpenDyslexic</button>
       </div>
@@ -1686,7 +1686,9 @@ ollama run huihui_ai/qwen3.5-abliterated:9b    # 6.6 GB</pre></div>
   menu.querySelectorAll('button[data-font]').forEach(function(b){ b.addEventListener('click', function(){ apply('font', b.dataset.font); }); });
   document.addEventListener('click', function(){ if(!menu.hidden) openMenu(false); });
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !menu.hidden){ openMenu(false); btn.focus(); } });
-  apply('theme', Persist.get('qft-theme') || 'candy');
+  // 'candy' was renamed 'bubblegum' on 2026-10-25; apply() re-saves the new name.
+  var savedTheme = Persist.get('qft-theme');
+  apply('theme', savedTheme === 'candy' ? 'bubblegum' : (savedTheme || 'bubblegum'));
   apply('font', Persist.get('qft-font') || 'serif');
 
   /* ---- Copy buttons on code blocks ---- */
