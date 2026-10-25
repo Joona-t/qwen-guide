@@ -16,7 +16,7 @@
 }
 
 /* ---------- themes (all text pairs ≥ 4.8:1, checked) ---------- */
-:root, :root[data-theme="candy"] {
+:root, :root[data-theme="bubblegum"] {
   --paper: #fbf3f5; --paper-deep: #f5e6ec; --wash: #f1dee6;
   --ink: #2b1b25; --ink-soft: #4a3442; --muted: #6b5262;
   --line: #ead4dd; --line-strong: #d4b3c2;

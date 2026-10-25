@@ -89,7 +89,7 @@ def blocks(lines):
         out.append(f"<p>{inline(' '.join(buf))}</p>")
     return "\n      ".join(out)
 
-THEMES = [("candy", "Candy", "#fbf3f5", "#a52f66"), ("retro", "Retro Pink", "#fdeef4", "#b8175a"),
+THEMES = [("bubblegum", "Bubblegum", "#fbf3f5", "#a52f66"), ("retro", "Retro Pink", "#fdeef4", "#b8175a"),
           ("noir", "Dark Noir", "#17131b", "#f09cc4"), ("beige", "Beige Paper", "#f3eee4", "#9c4a2b")]
 FONTS = [("serif", "Serif", "font-family:var(--serif)"), ("sans", "Sans", "font-family:var(--sans)"),
          ("dyslexic", "OpenDyslexic", "font-family:var(--dys)")]
@@ -123,7 +123,7 @@ def build():
     body = "\n\n    ".join(sections)
     toc_items = "".join(f'<li class="toc-part">{html.escape(t)}</li>' if i == "part" else f'<li><a href="#{i}">{html.escape(t)}</a></li>' for i, t in toc)
     return f"""<!doctype html>
-<html lang="en" data-theme="candy" data-font="serif">
+<html lang="en" data-theme="bubblegum" data-font="serif">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

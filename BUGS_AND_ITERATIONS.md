@@ -1,5 +1,10 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-10-25: ITER: "Candy" theme renamed "Bubblegum"
+
+- **What:** Suite-wide rename (Joona). The theme key `candy` → `bubblegum` in `template/style.css`, `template/base.js`, `scripts/build.py` and the README, and `index.html` is rebuilt. A reader whose saved `qft-theme` is `candy` is moved to `bubblegum` on load (`apply()` re-saves it).
+- **Verify:** `python3 scripts/build.py --check` passes. In local Chromium, a stored `candy` loads as `data-theme="bubblegum"`, storage is rewritten, the menu shows "Bubblegum" checked, the background is `#fbf3f5`, and there are no console errors.
+
 Newest first.
 
 ## ITER-008 — v2: RTX 3090 / NVIDIA PCs, depth, and a free learning path (2026-10-16)
