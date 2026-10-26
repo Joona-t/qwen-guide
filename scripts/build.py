@@ -170,7 +170,7 @@ def build():
     <a href="#abl-what">Abliteration</a>
     <a href="#trouble">Reference</a>
     <div class="appearance">
-      <button id="themeBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="themeMenu">Change Theme</button>
+      <button id="themeBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="themeMenu">Change Font &amp; Theme</button>
       <div id="themeMenu" role="menu" aria-label="Theme and reading font" hidden>
         <p class="menu-label">Theme</p>{themes}
         <hr>
