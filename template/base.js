@@ -30,8 +30,10 @@
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !menu.hidden){ openMenu(false); btn.focus(); } });
   // 'candy' was renamed 'bubblegum' on 2026-10-25; apply() re-saves the new name.
   var savedTheme = Persist.get('qft-theme');
-  apply('theme', savedTheme === 'candy' ? 'bubblegum' : (savedTheme || 'bubblegum'));
-  apply('font', Persist.get('qft-font') || 'serif');
+  // Basalt (lovespark.love's look) is the default since 2026-10-27; it reads in OpenDyslexic
+  // like the site. Saved choices win, so returning readers keep their theme and font.
+  apply('theme', savedTheme === 'candy' ? 'bubblegum' : (savedTheme || 'basalt'));
+  apply('font', Persist.get('qft-font') || (savedTheme ? 'serif' : 'dyslexic'));
 
   /* ---- Copy buttons on code blocks ---- */
   document.querySelectorAll('.code').forEach(function(block){
