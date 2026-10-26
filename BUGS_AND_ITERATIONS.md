@@ -1,5 +1,10 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-10-27: ITER: Parts rail pinned to the window's left edge
+
+- **What:** Joona: the boxed parts rail felt claustrophobic; it should sit on the left edge. The rail is now a 300 px sticky column flush with the window's left edge, full height, with its own divider and a faint panel tint; the reading column (740 px) is centred in the space to its right. Below 1080 px it still folds into the Contents dropdown.
+- **Verify:** `node scripts/verify.mjs`: PASS. Headless Chrome at 1600 px and 1120 px: rail flush left, text centred in the remaining width.
+
 ## 2026-10-27: ITER: Layout overhaul: part cards in the contents rail, one shared grid
 
 - **What:** Joona: lots of empty space on the left and the layout "seems off". **Root cause of the "off":** the hero sat left-aligned in a 1240 px box while the body grid (200 px rail + 700 px column) was `justify-content: center`, so the hero, rail and text started at different x positions, and the slim rail left the left side empty. **Fix:** one grid for everything (`--max` 1320 px, rail 280 px, column 740 px, left-aligned), so the hero, rail and text share one left edge. The rail now shows the four parts plus Reference as numbered cards (I–IV, §) in the display font; the card for the part you're reading opens to list its sections, with the current one highlighted (`base.js` scrollspy sets `.current`). The phone contents list shows every part's sections.
