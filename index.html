@@ -46,8 +46,8 @@
   --display: var(--serif);    /* headings */
   --ui: var(--sans);          /* labels, nav, tables */
   --gutter: 5.5%;
-  --max: 1240px;
-  --col: 700px;
+  --max: 1320px;
+  --col: 740px;
 }
 
 /* ---------- themes (all text pairs ≥ 4.8:1, checked) ---------- */
@@ -197,23 +197,40 @@ sub, sup { line-height: 0; }
 .plaque h3 { font-family: var(--display); font-weight: 400; font-size: 21px; line-height: 1.25; margin: 0 0 4px; letter-spacing: -.01em; }
 .plaque p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
 
-/* ---------- body layout: slim contents rail + reading column ---------- */
+/* ---------- body layout: part-card contents rail + reading column, on the hero's grid ---------- */
 .layout {
   max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter) 40px;
-  display: grid; grid-template-columns: 200px minmax(0, var(--col)); gap: 0 72px; justify-content: center;
+  display: grid; grid-template-columns: 280px minmax(0, var(--col)); gap: 0 clamp(48px, 6vw, 96px);
   border-top: 1px solid var(--line);
 }
-.toc { position: sticky; top: 24px; align-self: start; padding-top: 52px; max-height: calc(100vh - 24px); overflow: auto; }
-.toc ol { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--line); }
-.toc a {
-  display: block; padding: 5px 0 5px 14px; margin-left: -1px; border-left: 1px solid transparent;
-  font-size: 12.5px; line-height: 1.4; color: var(--muted); text-decoration: none;
+.toc { position: sticky; top: 0; align-self: start; padding: 52px 4px 24px 0; max-height: 100vh; overflow: auto; scrollbar-width: thin; }
+.toc ol { list-style: none; margin: 0; padding: 0; }
+.toc a { text-decoration: none; }
+.toc-start {
+  display: block; padding: 6px 0 6px 14px; margin-bottom: 14px; border-left: 1px solid var(--line);
+  font-size: 13px; color: var(--muted);
 }
-.toc a:hover { color: var(--ink); }
-.toc a.active { color: var(--accent); border-left-color: var(--accent); }
-.toc-part { padding: 14px 0 4px 14px; font-size: 10px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
-.toc-part:first-child { padding-top: 0; }
-.toc-mobile .toc-part { padding-left: 0; }
+.toc-start:hover { color: var(--ink); }
+.toc-start.active { color: var(--accent); border-left-color: var(--accent); }
+.toc-parts { display: grid; gap: 10px; }
+.toc-group { border: 1px solid var(--line); background: color-mix(in srgb, var(--paper-deep) 55%, transparent); transition: border-color .2s ease; }
+.toc-group.current { border-color: var(--line-strong); background: var(--paper-deep); }
+.toc-head { display: flex; align-items: center; gap: 14px; padding: 12px 14px; color: var(--ink); }
+.toc-head:hover .toc-title { color: var(--accent); }
+.toc-num { flex: 0 0 34px; text-align: center; font-family: var(--display); font-size: 22px; line-height: 1; color: var(--accent); }
+.toc-title { font-family: var(--display); font-size: 15.5px; line-height: 1.25; }
+.toc-title small {
+  display: block; margin-bottom: 3px; font-family: var(--ui); font-size: 10px; font-weight: 600;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--muted);
+}
+.toc-group > ol { display: none; margin: 0 14px 12px 62px; border-left: 1px solid var(--line); }
+.toc-group.current > ol { display: block; }
+.toc-group > ol a {
+  display: block; padding: 4px 0 4px 12px; margin-left: -1px; border-left: 1px solid transparent;
+  font-size: 12.5px; line-height: 1.4; color: var(--muted);
+}
+.toc-group > ol a:hover { color: var(--ink); }
+.toc-group > ol a.active { color: var(--accent); border-left-color: var(--accent); }
 .toc-mobile { display: none; }
 
 main section { padding: 52px 0 8px; border-top: 1px solid var(--line); }
@@ -358,6 +375,12 @@ footer { border-top: 1px solid var(--line); }
   .toc-mobile summary { cursor: pointer; padding: 14px 18px; font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
   .toc-mobile ol { list-style: none; margin: 0; padding: 0 18px 14px 18px; }
   .toc-mobile a { display: block; padding: 4px 0; font-size: 14px; color: var(--ink-soft); text-decoration: none; }
+  .toc-mobile .toc-start { padding: 0 18px 8px; }
+  .toc-mobile .toc-parts { display: block; padding: 0; }
+  .toc-mobile .toc-head { display: flex; gap: 10px; padding: 12px 18px 4px; color: var(--ink); }
+  .toc-mobile .toc-num { flex-basis: 26px; font-size: 18px; }
+  .toc-mobile .toc-group { border: 0; background: none; }
+  .toc-mobile .toc-group > ol { display: block; margin: 0; padding: 0 18px 8px 54px; border-left: 0; }
 }
 @media (max-width: 860px) {
   .hero { grid-template-columns: 1fr; gap: 44px; padding-top: 48px; }
@@ -449,9 +472,9 @@ footer { border-top: 1px solid var(--line); }
 </section>
 
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="eyebrow">Contents</p><ol><li><a href="#start">Start here</a></li><li class="toc-part">Part 1 · Run Qwen locally</li><li><a href="#run-basics">What a local model is</a></li><li><a href="#use-case">Local models and your use case</a></li><li><a href="#models">Which Qwen</a></li><li><a href="#huggingface">Hugging Face</a></li><li><a href="#install">Install Ollama</a></li><li><a href="#nvidia-pc">Running on an NVIDIA PC</a></li><li><a href="#tokens">Tokens, context and the KV cache</a></li><li><a href="#thinking">Thinking mode</a></li><li><a href="#runtimes">Other runtimes</a></li><li><a href="#faster">Faster and smaller</a></li><li><a href="#bench">Benchmark your machine</a></li><li><a href="#api">Use it from code</a></li><li><a href="#safe-run">Keep it safe</a></li><li><a href="#learn-run">Learn more</a></li><li class="toc-part">Part 2 · Build on it</li><li><a href="#embed">Embeddings</a></li><li><a href="#rag">Retrieval (RAG)</a></li><li><a href="#qdrant">A vector store (Qdrant)</a></li><li><a href="#shared-memory">Shared memory (MCP)</a></li><li><a href="#harden">Harden it</a></li><li><a href="#route">Route the work</a></li><li><a href="#build-order">A build order</a></li><li><a href="#learn-build">Learn more</a></li><li class="toc-part">Part 3 · Fine-tune</li><li><a href="#basics">What fine-tuning changes</a></li><li><a href="#step">One learning step</a></li><li><a href="#lora">LoRA and QLoRA</a></li><li><a href="#memory">Will it fit?</a></li><li><a href="#decide">Decide before you train</a></li><li><a href="#data">Build the dataset</a></li><li><a href="#mac">Path A: Mac (mlx-lm)</a></li><li><a href="#nvidia">Path B: NVIDIA (Unsloth)</a></li><li><a href="#eval">Evaluate honestly</a></li><li><a href="#ship">Serve and ship</a></li><li><a href="#beyond">Beyond SFT</a></li><li><a href="#quiz">Quiz</a></li><li><a href="#learn-ft">Learn more</a></li><li class="toc-part">Part 4 · Abliteration</li><li><a href="#abl-what">What abliteration is</a></li><li><a href="#abl-research">What research found</a></li><li><a href="#abl-cost">What it costs</a></li><li><a href="#abl-responsibility">Responsibility and safety</a></li><li><a href="#abl-routes">How people do it locally</a></li><li><a href="#abl-eval">Evaluate</a></li><li><a href="#learn-abl">Learn more</a></li><li class="toc-part">Reference</li><li><a href="#learn-path">Free learning path</a></li><li><a href="#trouble">Troubleshooting</a></li><li><a href="#glossary">Glossary</a></li><li><a href="#sources">Sources</a></li><li><a href="#caveats">Caveats</a></li></ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="eyebrow">Contents</p><a class="toc-start" href="#start">Start here</a><ol class="toc-parts"><li class="toc-group"><a class="toc-head" href="#run-basics"><span class="toc-num" aria-hidden="true">I</span><span class="toc-title"><small>Part 1</small>Run Qwen locally</span></a><ol><li><a href="#run-basics">What a local model is</a></li><li><a href="#use-case">Local models and your use case</a></li><li><a href="#models">Which Qwen</a></li><li><a href="#huggingface">Hugging Face</a></li><li><a href="#install">Install Ollama</a></li><li><a href="#nvidia-pc">Running on an NVIDIA PC</a></li><li><a href="#tokens">Tokens, context and the KV cache</a></li><li><a href="#thinking">Thinking mode</a></li><li><a href="#runtimes">Other runtimes</a></li><li><a href="#faster">Faster and smaller</a></li><li><a href="#bench">Benchmark your machine</a></li><li><a href="#api">Use it from code</a></li><li><a href="#safe-run">Keep it safe</a></li><li><a href="#learn-run">Learn more</a></li></ol></li><li class="toc-group"><a class="toc-head" href="#embed"><span class="toc-num" aria-hidden="true">II</span><span class="toc-title"><small>Part 2</small>Build on it</span></a><ol><li><a href="#embed">Embeddings</a></li><li><a href="#rag">Retrieval (RAG)</a></li><li><a href="#qdrant">A vector store (Qdrant)</a></li><li><a href="#shared-memory">Shared memory (MCP)</a></li><li><a href="#harden">Harden it</a></li><li><a href="#route">Route the work</a></li><li><a href="#build-order">A build order</a></li><li><a href="#learn-build">Learn more</a></li></ol></li><li class="toc-group"><a class="toc-head" href="#basics"><span class="toc-num" aria-hidden="true">III</span><span class="toc-title"><small>Part 3</small>Fine-tune</span></a><ol><li><a href="#basics">What fine-tuning changes</a></li><li><a href="#step">One learning step</a></li><li><a href="#lora">LoRA and QLoRA</a></li><li><a href="#memory">Will it fit?</a></li><li><a href="#decide">Decide before you train</a></li><li><a href="#data">Build the dataset</a></li><li><a href="#mac">Path A: Mac (mlx-lm)</a></li><li><a href="#nvidia">Path B: NVIDIA (Unsloth)</a></li><li><a href="#eval">Evaluate honestly</a></li><li><a href="#ship">Serve and ship</a></li><li><a href="#beyond">Beyond SFT</a></li><li><a href="#quiz">Quiz</a></li><li><a href="#learn-ft">Learn more</a></li></ol></li><li class="toc-group"><a class="toc-head" href="#abl-what"><span class="toc-num" aria-hidden="true">IV</span><span class="toc-title"><small>Part 4</small>Abliteration</span></a><ol><li><a href="#abl-what">What abliteration is</a></li><li><a href="#abl-research">What research found</a></li><li><a href="#abl-cost">What it costs</a></li><li><a href="#abl-responsibility">Responsibility and safety</a></li><li><a href="#abl-routes">How people do it locally</a></li><li><a href="#abl-eval">Evaluate</a></li><li><a href="#learn-abl">Learn more</a></li></ol></li><li class="toc-group"><a class="toc-head" href="#learn-path"><span class="toc-num" aria-hidden="true">§</span><span class="toc-title"><small>Appendix</small>Reference</span></a><ol><li><a href="#learn-path">Free learning path</a></li><li><a href="#trouble">Troubleshooting</a></li><li><a href="#glossary">Glossary</a></li><li><a href="#sources">Sources</a></li><li><a href="#caveats">Caveats</a></li></ol></li></ol></nav>
   <main id="main">
-    <details class="toc-mobile"><summary>Contents</summary><ol><li><a href="#start">Start here</a></li><li class="toc-part">Part 1 · Run Qwen locally</li><li><a href="#run-basics">What a local model is</a></li><li><a href="#use-case">Local models and your use case</a></li><li><a href="#models">Which Qwen</a></li><li><a href="#huggingface">Hugging Face</a></li><li><a href="#install">Install Ollama</a></li><li><a href="#nvidia-pc">Running on an NVIDIA PC</a></li><li><a href="#tokens">Tokens, context and the KV cache</a></li><li><a href="#thinking">Thinking mode</a></li><li><a href="#runtimes">Other runtimes</a></li><li><a href="#faster">Faster and smaller</a></li><li><a href="#bench">Benchmark your machine</a></li><li><a href="#api">Use it from code</a></li><li><a href="#safe-run">Keep it safe</a></li><li><a href="#learn-run">Learn more</a></li><li class="toc-part">Part 2 · Build on it</li><li><a href="#embed">Embeddings</a></li><li><a href="#rag">Retrieval (RAG)</a></li><li><a href="#qdrant">A vector store (Qdrant)</a></li><li><a href="#shared-memory">Shared memory (MCP)</a></li><li><a href="#harden">Harden it</a></li><li><a href="#route">Route the work</a></li><li><a href="#build-order">A build order</a></li><li><a href="#learn-build">Learn more</a></li><li class="toc-part">Part 3 · Fine-tune</li><li><a href="#basics">What fine-tuning changes</a></li><li><a href="#step">One learning step</a></li><li><a href="#lora">LoRA and QLoRA</a></li><li><a href="#memory">Will it fit?</a></li><li><a href="#decide">Decide before you train</a></li><li><a href="#data">Build the dataset</a></li><li><a href="#mac">Path A: Mac (mlx-lm)</a></li><li><a href="#nvidia">Path B: NVIDIA (Unsloth)</a></li><li><a href="#eval">Evaluate honestly</a></li><li><a href="#ship">Serve and ship</a></li><li><a href="#beyond">Beyond SFT</a></li><li><a href="#quiz">Quiz</a></li><li><a href="#learn-ft">Learn more</a></li><li class="toc-part">Part 4 · Abliteration</li><li><a href="#abl-what">What abliteration is</a></li><li><a href="#abl-research">What research found</a></li><li><a href="#abl-cost">What it costs</a></li><li><a href="#abl-responsibility">Responsibility and safety</a></li><li><a href="#abl-routes">How people do it locally</a></li><li><a href="#abl-eval">Evaluate</a></li><li><a href="#learn-abl">Learn more</a></li><li class="toc-part">Reference</li><li><a href="#learn-path">Free learning path</a></li><li><a href="#trouble">Troubleshooting</a></li><li><a href="#glossary">Glossary</a></li><li><a href="#sources">Sources</a></li><li><a href="#caveats">Caveats</a></li></ol></details>
+    <details class="toc-mobile"><summary>Contents</summary><a class="toc-start" href="#start">Start here</a><ol class="toc-parts"><li class="toc-group"><a class="toc-head" href="#run-basics"><span class="toc-num" aria-hidden="true">I</span><span class="toc-title"><small>Part 1</small>Run Qwen locally</span></a><ol><li><a href="#run-basics">What a local model is</a></li><li><a href="#use-case">Local models and your use case</a></li><li><a href="#models">Which Qwen</a></li><li><a href="#huggingface">Hugging Face</a></li><li><a href="#install">Install Ollama</a></li><li><a href="#nvidia-pc">Running on an NVIDIA PC</a></li><li><a href="#tokens">Tokens, context and the KV cache</a></li><li><a href="#thinking">Thinking mode</a></li><li><a href="#runtimes">Other runtimes</a></li><li><a href="#faster">Faster and smaller</a></li><li><a href="#bench">Benchmark your machine</a></li><li><a href="#api">Use it from code</a></li><li><a href="#safe-run">Keep it safe</a></li><li><a href="#learn-run">Learn more</a></li></ol></li><li class="toc-group"><a class="toc-head" href="#embed"><span class="toc-num" aria-hidden="true">II</span><span class="toc-title"><small>Part 2</small>Build on it</span></a><ol><li><a href="#embed">Embeddings</a></li><li><a href="#rag">Retrieval (RAG)</a></li><li><a href="#qdrant">A vector store (Qdrant)</a></li><li><a href="#shared-memory">Shared memory (MCP)</a></li><li><a href="#harden">Harden it</a></li><li><a href="#route">Route the work</a></li><li><a href="#build-order">A build order</a></li><li><a href="#learn-build">Learn more</a></li></ol></li><li class="toc-group"><a class="toc-head" href="#basics"><span class="toc-num" aria-hidden="true">III</span><span class="toc-title"><small>Part 3</small>Fine-tune</span></a><ol><li><a href="#basics">What fine-tuning changes</a></li><li><a href="#step">One learning step</a></li><li><a href="#lora">LoRA and QLoRA</a></li><li><a href="#memory">Will it fit?</a></li><li><a href="#decide">Decide before you train</a></li><li><a href="#data">Build the dataset</a></li><li><a href="#mac">Path A: Mac (mlx-lm)</a></li><li><a href="#nvidia">Path B: NVIDIA (Unsloth)</a></li><li><a href="#eval">Evaluate honestly</a></li><li><a href="#ship">Serve and ship</a></li><li><a href="#beyond">Beyond SFT</a></li><li><a href="#quiz">Quiz</a></li><li><a href="#learn-ft">Learn more</a></li></ol></li><li class="toc-group"><a class="toc-head" href="#abl-what"><span class="toc-num" aria-hidden="true">IV</span><span class="toc-title"><small>Part 4</small>Abliteration</span></a><ol><li><a href="#abl-what">What abliteration is</a></li><li><a href="#abl-research">What research found</a></li><li><a href="#abl-cost">What it costs</a></li><li><a href="#abl-responsibility">Responsibility and safety</a></li><li><a href="#abl-routes">How people do it locally</a></li><li><a href="#abl-eval">Evaluate</a></li><li><a href="#learn-abl">Learn more</a></li></ol></li><li class="toc-group"><a class="toc-head" href="#learn-path"><span class="toc-num" aria-hidden="true">§</span><span class="toc-title"><small>Appendix</small>Reference</span></a><ol><li><a href="#learn-path">Free learning path</a></li><li><a href="#trouble">Troubleshooting</a></li><li><a href="#glossary">Glossary</a></li><li><a href="#sources">Sources</a></li><li><a href="#caveats">Caveats</a></li></ol></li></ol></details>
     <section id="start">
       <p class="kicker"><span class="rule"></span>Start here</p>
       <h2>Before you begin</h2>
@@ -1748,7 +1771,9 @@ ollama run huihui_ai/qwen3.5-abliterated:9b    # 6.6 GB</pre></div>
   });
 
   /* ---- Contents rail: highlight the section in view ---- */
-  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  // Section links only (part cards link to their first section); the part holding the
+  // active link gets .current, which opens its section list.
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a:not(.toc-head)'));
   if('IntersectionObserver' in window && links.length){
     var map = {}; links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
     var obs = new IntersectionObserver(function(entries){
@@ -1756,6 +1781,8 @@ ollama run huihui_ai/qwen3.5-abliterated:9b    # 6.6 GB</pre></div>
         if(e.isIntersecting && map[e.target.id]){
           links.forEach(function(a){ a.classList.remove('active'); a.removeAttribute('aria-current'); });
           map[e.target.id].classList.add('active'); map[e.target.id].setAttribute('aria-current', 'true');
+          var group = map[e.target.id].closest('.toc-group');
+          document.querySelectorAll('.toc .toc-group').forEach(function(g){ g.classList.toggle('current', g === group); });
         }
       });
     }, { rootMargin: '-20% 0px -70% 0px' });

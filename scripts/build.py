@@ -97,6 +97,24 @@ RULES = [("Run it before you change it", "Most \"the model can't do X\" problems
          ("Test on your own task", "A small set of real inputs with the answers you'd accept, written before you start, beats every leaderboard and every loss curve."),
          ("Own what you ship", "A local model is yours: its privacy, its mistakes, and anything you removed from it.")]
 
+ROMAN = {"1": "I", "2": "II", "3": "III", "4": "IV"}
+
+def toc_html(toc):
+    """Contents rail: "Start here", then one card per part (numeral + name) holding its sections."""
+    start, groups = None, []
+    for i, t in toc:
+        if i == "part": groups.append((t, []))
+        elif not groups: start = (i, t)
+        else: groups[-1][1].append((i, t))
+    out = f'<a class="toc-start" href="#{start[0]}">{html.escape(start[1])}</a><ol class="toc-parts">' if start else '<ol class="toc-parts">'
+    for title, items in groups:
+        m = re.match(r"Part (\d+) · (.*)", title)
+        num, label, name = (ROMAN.get(m[1], m[1]), f"Part {m[1]}", m[2]) if m else ("§", "Appendix", title)
+        links = "".join(f'<li><a href="#{i}">{html.escape(t)}</a></li>' for i, t in items)
+        out += (f'<li class="toc-group"><a class="toc-head" href="#{items[0][0]}"><span class="toc-num" aria-hidden="true">{num}</span>'
+                f'<span class="toc-title"><small>{label}</small>{html.escape(name)}</span></a><ol>{links}</ol></li>')
+    return out + "</ol>"
+
 def build():
     md = (ROOT / "source/qwen-guide.md").read_text(encoding="utf-8")
     parts = re.split(r"^<!-- (section|part) (.*?) -->\n", md, flags=re.M)
@@ -121,7 +139,7 @@ def build():
     fonts = "".join(f'<button type="button" role="menuitemradio" aria-checked="false" data-font="{k}"><span class="fontpreview" style="{st}" aria-hidden="true">Aa</span>{n}</button>' for k, n, st in FONTS)
     rules = "".join(f"<li><h3>{inline(t)}</h3><p>{inline(d)}</p></li>" for t, d in RULES)
     body = "\n\n    ".join(sections)
-    toc_items = "".join(f'<li class="toc-part">{html.escape(t)}</li>' if i == "part" else f'<li><a href="#{i}">{html.escape(t)}</a></li>' for i, t in toc)
+    toc_items = toc_html(toc)
     return f"""<!doctype html>
 <html lang="en" data-theme="basalt" data-font="serif">
 <head>
@@ -182,9 +200,9 @@ def build():
 </section>
 
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="eyebrow">Contents</p><ol>{toc_items}</ol></nav>
+  <nav class="toc" aria-label="Contents"><p class="eyebrow">Contents</p>{toc_items}</nav>
   <main id="main">
-    <details class="toc-mobile"><summary>Contents</summary><ol>{toc_items}</ol></details>
+    <details class="toc-mobile"><summary>Contents</summary>{toc_items}</details>
     {body}
   </main>
 </div>

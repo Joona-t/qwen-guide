@@ -49,7 +49,9 @@
   });
 
   /* ---- Contents rail: highlight the section in view ---- */
-  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  // Section links only (part cards link to their first section); the part holding the
+  // active link gets .current, which opens its section list.
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a:not(.toc-head)'));
   if('IntersectionObserver' in window && links.length){
     var map = {}; links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
     var obs = new IntersectionObserver(function(entries){
@@ -57,6 +59,8 @@
         if(e.isIntersecting && map[e.target.id]){
           links.forEach(function(a){ a.classList.remove('active'); a.removeAttribute('aria-current'); });
           map[e.target.id].classList.add('active'); map[e.target.id].setAttribute('aria-current', 'true');
+          var group = map[e.target.id].closest('.toc-group');
+          document.querySelectorAll('.toc .toc-group').forEach(function(g){ g.classList.toggle('current', g === group); });
         }
       });
     }, { rootMargin: '-20% 0px -70% 0px' });
