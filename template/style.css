@@ -353,9 +353,9 @@ footer { border-top: 1px solid var(--line); }
   .toc-mobile .toc-group { border: 0; background: none; }
   .toc-mobile .toc-group > ol { display: block; margin: 0; padding: 0 18px 8px 54px; border-left: 0; }
 }
+@media (max-width: 1080px) { .topnav a { display: none; } }   /* the parts rail folds here too; frees room for "Change Font & Theme" */
 @media (max-width: 860px) {
   .hero { grid-template-columns: 1fr; gap: 44px; padding-top: 48px; }
-  .topnav a { display: none; }
 }
 @media (max-width: 560px) {
   :root { --gutter: 16px; }
@@ -395,3 +395,12 @@ footer { border-top: 1px solid var(--line); }
 :root[data-theme="basalt"] .button:hover { background: linear-gradient(180deg, #2b2e33 0%, #1f2125 52%, #16171a 100%); color: #f4c46a; border-color: #f4c46a; box-shadow: 0 0 0 1px #d9a23b, 0 0 18px rgba(217,162,59,.28); }
 :root[data-theme="basalt"] #themeMenu { box-shadow: 0 12px 32px rgba(0,0,0,.6); }
 :root[data-theme="basalt"] .wordmark img { filter: grayscale(1) sepia(.5) brightness(.9); }
+/* Basalt swaps the wordmark mascot for lovespark.love's glyph ankh, lit by an ember pool (Sparky stays in the footer) */
+.wordmark-ankh { display: none; }
+:root[data-theme="basalt"] .wordmark img:not(.wordmark-ankh) { display: none; }
+:root[data-theme="basalt"] .wordmark-ankh {
+  display: block; width: 56px; height: 56px; margin: -8px -4px -8px -8px; border: 0; border-radius: 50%;
+  filter: brightness(1.35) drop-shadow(0 0 6px rgba(244,196,106,.35));
+  background: radial-gradient(circle, rgba(217,162,59,.22) 0%, rgba(217,162,59,.06) 50%, transparent 72%);
+  -webkit-mask-image: radial-gradient(circle, #000 66%, transparent 76%); mask-image: radial-gradient(circle, #000 66%, transparent 76%);
+}

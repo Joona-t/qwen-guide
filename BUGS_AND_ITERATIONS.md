@@ -1,5 +1,11 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-10-27: ITER: Basalt wordmark shows the ankh; top nav folds at 1080 px
+
+- **What:** At Joona's request Basalt shows lovespark.love's glyph ankh (`hero-ankh-beige.png`, resized to 160 px and inlined as `template/ankh.datauri`, 30 KB) in place of the wordmark mascot, with an ember glow. Other themes keep Sparky; Sparky stays in the footer in every theme.
+- **Bug:** the longer "Change Font & Theme" label crowded the top nav between 860 and 1080 px ("Fine-tune" wrapped). **Root cause:** the nav links only hid below 860 px. **Fix:** they now hide below 1080 px, where the parts rail also folds.
+- **Verify:** `node scripts/verify.mjs`: PASS. Headless Chrome at 1600 px, 900 px and 360 px mobile: ankh visible and lit, no crowding.
+
 ## 2026-10-27: ITER: Menu button reads "Change Font & Theme"
 
 - **What:** At Joona's request the appearance button now says **Change Font & Theme**, since the menu holds both. README updated.

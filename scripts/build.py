@@ -133,6 +133,7 @@ def build():
         sections.append(f'<section id="{a["id"]}">\n      <p class="kicker"><span class="rule"></span>{html.escape(a["kicker"])}</p>\n      <h2>{inline(h2)}</h2>\n      {blocks(rest.split(chr(10)))}\n    </section>')
         toc.append((a["id"], a.get("toc", h2)))
     mascot = (T / "mascot.datauri").read_text(encoding="utf-8").strip()
+    ankh = (T / "ankh.datauri").read_text(encoding="utf-8").strip()   # Basalt wordmark, as on lovespark.love
     desc = "A first-principles, offline guide to local Qwen models in four parts: run one on a Mac, Linux or Windows; build retrieval and shared agent memory on it; fine-tune it with LoRA; understand abliteration, its costs and your responsibilities. With interactive calculators and verified sources. No paid API."
     css = (T / "fonts.css").read_text(encoding="utf-8") + (T / "style.css").read_text(encoding="utf-8")
     themes = "".join(f'<button type="button" role="menuitemradio" aria-checked="false" data-theme="{k}"><span class="swatch" style="background:linear-gradient(135deg,{bg} 50%,{ac} 50%)"></span>{n}</button>' for k, n, bg, ac in THEMES)
@@ -161,6 +162,7 @@ def build():
 <header class="topbar">
   <a class="wordmark" href="#top" aria-label="Fine-tune Qwen locally, back to top">
     <img src="{mascot}" alt="Sparky, the LoveSpark wolf mascot">
+    <img class="wordmark-ankh" src="{ankh}" alt="" aria-hidden="true">
     <span class="wordmark-text"><span class="wordmark-title">Qwen, locally</span><span class="wordmark-sub">A LoveSpark guide · Oct 2026</span></span>
   </a>
   <nav class="topnav" aria-label="Main navigation">
