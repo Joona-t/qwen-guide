@@ -1,5 +1,10 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-10-27: ITER: Layout overhaul: part cards in the contents rail, one shared grid
+
+- **What:** Joona: lots of empty space on the left and the layout "seems off". **Root cause of the "off":** the hero sat left-aligned in a 1240 px box while the body grid (200 px rail + 700 px column) was `justify-content: center`, so the hero, rail and text started at different x positions, and the slim rail left the left side empty. **Fix:** one grid for everything (`--max` 1320 px, rail 280 px, column 740 px, left-aligned), so the hero, rail and text share one left edge. The rail now shows the four parts plus Reference as numbered cards (I–IV, §) in the display font; the card for the part you're reading opens to list its sections, with the current one highlighted (`base.js` scrollspy sets `.current`). The phone contents list shows every part's sections.
+- **Verify:** `node scripts/verify.mjs`: PASS, 320 checks. Headless Chrome screenshots at 1600 px (hero; start; deep in Part 1 with its card open), 1120 px and 500 px.
+
 ## 2026-10-27: ITER: Basalt reads in Cinzel
 
 - **What:** Joona picked Cinzel (the gold tagline face) as Basalt's font. Basalt's default **Serif** setting now sets body text in Cinzel as well as headings; Sans and OpenDyslexic still switch the body. New readers default to Serif again (not OpenDyslexic). Other themes unchanged.
