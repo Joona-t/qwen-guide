@@ -1,5 +1,10 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-10-27: ITER: Menu button reads "Change Font & Theme"
+
+- **What:** At Joona's request the appearance button now says **Change Font & Theme**, since the menu holds both. README updated.
+- **Verify:** `node scripts/verify.mjs`: PASS. Headless Chrome at 1600 px (one line) and 360 px mobile (wraps to two lines inside the pill, no overlap).
+
 ## 2026-10-27: ITER: Parts rail pinned to the window's left edge
 
 - **What:** Joona: the boxed parts rail felt claustrophobic; it should sit on the left edge. The rail is now a 300 px sticky column flush with the window's left edge, full height, with its own divider and a faint panel tint; the reading column (740 px) is centred in the space to its right. Below 1080 px it still folds into the Contents dropdown.
