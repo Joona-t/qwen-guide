@@ -123,7 +123,7 @@ def build():
     body = "\n\n    ".join(sections)
     toc_items = "".join(f'<li class="toc-part">{html.escape(t)}</li>' if i == "part" else f'<li><a href="#{i}">{html.escape(t)}</a></li>' for i, t in toc)
     return f"""<!doctype html>
-<html lang="en" data-theme="basalt" data-font="dyslexic">
+<html lang="en" data-theme="basalt" data-font="serif">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

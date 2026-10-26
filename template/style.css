@@ -64,8 +64,10 @@
 /* ---------- reading fonts ---------- */
 :root[data-font="sans"] { --read: var(--sans); --display: var(--sans); }
 :root[data-font="dyslexic"] { --read: var(--dys); --display: var(--dys); --ui: var(--dys); }
-/* Basalt keeps lovespark.love's type whatever the reading font: Cinzel headings, DM Mono labels */
+/* Basalt keeps lovespark.love's type whatever the reading font: Cinzel headings, DM Mono labels. */
 :root[data-theme="basalt"][data-font] { --display: var(--cinzel); --ui: var(--dmmono); }
+/* Basalt's default reading font is Cinzel too; Sans and OpenDyslexic still switch the body */
+:root[data-theme="basalt"][data-font="serif"] { --read: var(--cinzel); }
 
 /* ---------- base ---------- */
 * { box-sizing: border-box; }
