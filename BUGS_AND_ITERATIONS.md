@@ -1,5 +1,10 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-10-27: ITER: Basalt reads in Cinzel
+
+- **What:** Joona picked Cinzel (the gold tagline face) as Basalt's font. Basalt's default **Serif** setting now sets body text in Cinzel as well as headings; Sans and OpenDyslexic still switch the body. New readers default to Serif again (not OpenDyslexic). Other themes unchanged.
+- **Verify:** `node scripts/verify.mjs`: PASS, 310 checks. Headless Chrome, fresh profile: `data-theme="basalt"`, `data-font="serif"`; hero and scroll-7000 screenshots show Cinzel body and headings.
+
 ## 2026-10-27: ITER: Basalt theme, now the default (lovespark.love's look)
 
 - **What:** Joona asked for the guide to match lovespark.love: a new **Basalt** theme (carved ash stone `#16171a`, ember gold `#d9a23b`, the site's radial stone ground, sepia mascot, stone-and-gold buttons) with the site's type: **Cinzel** headings, **OpenDyslexic** body, **DM Mono** labels. Basalt is first in the menu and is the default for new readers, who also default to OpenDyslexic. Readers with a saved theme or font keep it. Cinzel and DM Mono are inlined in `template/fonts.css` (SIL OFL 1.1) so the page stays offline and self-contained. The four other themes are unchanged.
