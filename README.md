@@ -31,7 +31,7 @@ Parts, sections and widgets are placed with HTML comments inside the Markdown (`
 
 ## Design and accessibility
 
-The page uses an editorial layout modelled on the Raw Thought reader: flat paper, hairline rules, a serif reading column and a slim contents rail. The **Change Theme** menu has four themes (Bubblegum, Retro Pink, Dark Noir, Beige Paper) and three reading fonts. **Serif** and **Sans** use system fonts. **OpenDyslexic** is bundled in the file. Every theme's text colours pass WCAG AA, at 4.8:1 or better. The page supports full keyboard navigation, shows visible focus rings, honours `prefers-reduced-motion`, and uses ARIA live regions on the calculators. It works down to 320 px.
+The page uses an editorial layout modelled on the Raw Thought reader: flat paper, hairline rules, a serif reading column and a slim contents rail. The **Change Theme** menu has five themes and three reading fonts. The default, **Basalt**, matches lovespark.love: carved stone and ember gold, Cinzel headings, OpenDyslexic body and DM Mono labels. The others are Bubblegum, Retro Pink, Dark Noir and Beige Paper. **Serif** and **Sans** use system fonts. **OpenDyslexic**, Cinzel and DM Mono are bundled in the file. Every theme's text colours pass WCAG AA, at 4.8:1 or better. The page supports full keyboard navigation, shows visible focus rings, honours `prefers-reduced-motion`, and uses ARIA live regions on the calculators. It works down to 320 px.
 
 ## License
 

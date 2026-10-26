@@ -1,12 +1,14 @@
 /* Qwen fine-tuning guide — editorial layout modelled on the Raw Thought reader.
-   Flat paper, hairline rules, serif reading column. Four LoveSpark themes, three reading fonts.
-   No external fonts: Serif and Sans use system stacks; OpenDyslexic is inlined (fonts.css). */
+   Flat paper, hairline rules, serif reading column. Five LoveSpark themes (Basalt default), three reading fonts.
+   No external fonts: Serif and Sans use system stacks; OpenDyslexic, Cinzel and DM Mono are inlined (fonts.css). */
 
 :root {
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Charter, Georgia, "Times New Roman", serif;
   --sans: "Helvetica Neue", Helvetica, Arial, "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --dys: "OpenDyslexic", system-ui, -apple-system, sans-serif;
+  --cinzel: "Cinzel", "Cormorant Garamond", Georgia, serif;
+  --dmmono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --read: var(--serif);       /* body copy */
   --display: var(--serif);    /* headings */
   --ui: var(--sans);          /* labels, nav, tables */
@@ -49,9 +51,21 @@
   color-scheme: light;
 }
 
+/* Basalt: lovespark.love's default theme. Carved ash stone, ember gold. */
+:root[data-theme="basalt"] {
+  --paper: #16171a; --paper-deep: #1f2125; --wash: #24262b;
+  --ink: #c9cdd3; --ink-soft: #b4b8be; --muted: #9aa0a8;
+  --line: #2c2e33; --line-strong: #4a3f2c;
+  --accent: #d9a23b; --on-accent: #16171a;
+  --ls-bg-gradient: radial-gradient(120% 90% at 50% 0%, #24262b 0%, #16171a 46%, #0f1012 100%);
+  color-scheme: dark;
+}
+
 /* ---------- reading fonts ---------- */
 :root[data-font="sans"] { --read: var(--sans); --display: var(--sans); }
 :root[data-font="dyslexic"] { --read: var(--dys); --display: var(--dys); --ui: var(--dys); }
+/* Basalt keeps lovespark.love's type whatever the reading font: Cinzel headings, DM Mono labels */
+:root[data-theme="basalt"][data-font] { --display: var(--cinzel); --ui: var(--dmmono); }
 
 /* ---------- base ---------- */
 * { box-sizing: border-box; }
@@ -338,3 +352,17 @@ footer { border-top: 1px solid var(--line); }
   .layout { display: block; }
   body { background: #fff; }
 }
+
+/* ---------- basalt: lovespark.love's carved-stone details ---------- */
+:root[data-theme="basalt"] body { background-color: #0f1012; background-attachment: fixed; }
+:root[data-theme="basalt"] :is(.hero h1, main h2, main h3, .plaque h3) { font-weight: 600; letter-spacing: .04em; text-shadow: 0 0 16px rgba(217,162,59,.15); }
+:root[data-theme="basalt"] :is(.wordmark-title, .hero-dates) { font-style: normal; letter-spacing: .02em; }
+:root[data-theme="basalt"] .hero-dates { color: var(--accent); }
+:root[data-theme="basalt"] .button {
+  background: linear-gradient(180deg, #282b30 0%, #1f2125 52%, #16171a 100%);
+  color: #f4c46a; border-color: #d9a23b;
+  box-shadow: inset 0 1px 0 rgba(140,146,156,.16), 0 6px 16px rgba(0,0,0,.45);
+}
+:root[data-theme="basalt"] .button:hover { background: linear-gradient(180deg, #2b2e33 0%, #1f2125 52%, #16171a 100%); color: #f4c46a; border-color: #f4c46a; box-shadow: 0 0 0 1px #d9a23b, 0 0 18px rgba(217,162,59,.28); }
+:root[data-theme="basalt"] #themeMenu { box-shadow: 0 12px 32px rgba(0,0,0,.6); }
+:root[data-theme="basalt"] .wordmark img { filter: grayscale(1) sepia(.5) brightness(.9); }

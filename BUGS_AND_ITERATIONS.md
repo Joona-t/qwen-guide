@@ -1,5 +1,11 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-10-27: ITER: Basalt theme, now the default (lovespark.love's look)
+
+- **What:** Joona asked for the guide to match lovespark.love: a new **Basalt** theme (carved ash stone `#16171a`, ember gold `#d9a23b`, the site's radial stone ground, sepia mascot, stone-and-gold buttons) with the site's type: **Cinzel** headings, **OpenDyslexic** body, **DM Mono** labels. Basalt is first in the menu and is the default for new readers, who also default to OpenDyslexic. Readers with a saved theme or font keep it. Cinzel and DM Mono are inlined in `template/fonts.css` (SIL OFL 1.1) so the page stays offline and self-contained. The four other themes are unchanged.
+- **Verify:** `python3 scripts/build.py` then `node scripts/verify.mjs`: PASS, 310 checks. Local Chromium with storage cleared: `data-theme="basalt"`, `data-font="dyslexic"`, Cinzel and DM Mono loaded, headings in Cinzel, labels in DM Mono. Headless Chrome (CPU and GPU) screenshots at the hero, scroll 7000 and scroll 60000 render correctly; hero also checked at narrow width.
+- **Note:** the desktop app's browser pane stops painting this page (and the live guide with OpenDyslexic) once scrolled, while real Chrome paints it fine; that's a pane capture limit, not a page bug.
+
 ## 2026-10-25: ITER: "Candy" theme renamed "Bubblegum"
 
 - **What:** Suite-wide rename (Joona). The theme key `candy` → `bubblegum` in `template/style.css`, `template/base.js`, `scripts/build.py` and the README, and `index.html` is rebuilt. A reader whose saved `qft-theme` is `candy` is moved to `bubblegum` on load (`apply()` re-saves it).
