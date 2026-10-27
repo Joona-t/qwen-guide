@@ -9,6 +9,7 @@
   --dys: "OpenDyslexic", system-ui, -apple-system, sans-serif;
   --cinzel: "Cinzel", "Cormorant Garamond", Georgia, serif;
   --dmmono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --cormorant: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
   --read: var(--serif);       /* body copy */
   --display: var(--serif);    /* headings */
   --ui: var(--sans);          /* labels, nav, tables */
@@ -66,8 +67,11 @@
 :root[data-font="dyslexic"] { --read: var(--dys); --display: var(--dys); --ui: var(--dys); }
 /* Basalt keeps lovespark.love's type whatever the reading font: Cinzel headings, DM Mono labels. */
 :root[data-theme="basalt"][data-font] { --display: var(--cinzel); --ui: var(--dmmono); }
-/* Basalt's default reading font is Cinzel too; Sans and OpenDyslexic still switch the body */
-:root[data-theme="basalt"][data-font="serif"] { --read: var(--cinzel); }
+/* Basalt reads in Cormorant Garamond, the lore face on lovespark.love (smaller x-height, so set larger);
+   Sans and OpenDyslexic still switch the body */
+:root[data-theme="basalt"][data-font="serif"] { --read: var(--cormorant); }
+:root[data-theme="basalt"][data-font="serif"] :is(main p, main li, .hero-description) { font-weight: 500; font-size: 20.5px; line-height: 1.6; }
+:root[data-theme="basalt"][data-font="serif"] main strong { font-weight: 600; }
 
 /* ---------- base ---------- */
 * { box-sizing: border-box; }

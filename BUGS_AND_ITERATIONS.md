@@ -1,5 +1,10 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-10-27: ITER: Basalt body in Cormorant Garamond
+
+- **What:** Joona picked Cormorant Garamond, the face of lovespark.love's lore lines, as Basalt's reading font ("elegant"), upright after comparing upright and italic previews. Basalt's default Serif setting now sets body text in Cormorant Garamond 500 at 20.5 px / 1.6 (its x-height is small), bold at 600; headings stay Cinzel, labels DM Mono. Four latin woff2 faces (500/600, upright/italic, 86 KB, SIL OFL 1.1, from @fontsource/cormorant-garamond 5.2.5 on jsDelivr, downloaded with Joona's OK) are inlined in `template/fonts.css`, so the page stays offline.
+- **Verify:** `node scripts/verify.mjs`: PASS. Headless Chrome at 1400 px: body renders in Cormorant Garamond with true bold and italic.
+
 ## 2026-10-27: ITER: Basalt wordmark shows the ankh; top nav folds at 1080 px
 
 - **What:** At Joona's request Basalt shows lovespark.love's glyph ankh (`hero-ankh-beige.png`, resized to 160 px and inlined as `template/ankh.datauri`, 30 KB) in place of the wordmark mascot, with an ember glow. Other themes keep Sparky; Sparky stays in the footer in every theme.
