@@ -1,5 +1,10 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-10-31: ITER: Korean themes from the papers archive
+
+- **What:** At Joona's request the four Korean themes from lovespark.love/papers (Seoul Y2K 서울, Gingham Sticker 깅엄, Holo Mochi 모찌, Neon Usagi 네온) are in the **Change Font & Theme** menu under a "Korean" heading. `scripts/build.py` carries the papers archive's `KOREAN` table and its 4.8:1 contrast gate (every text colour against every background, card fill and gradient stop); the papers-only card selectors are mapped to this guide's `.calc` widgets and `.wbtn` buttons. The menu also takes the papers fix for Hangul breaking mid-word and for running off short screens (272 px, no-wrap, `keep-all`, capped and scrollable).
+- **Verify:** `node scripts/verify.mjs`: PASS (320 checks); the build's contrast gate passes for all four. In the browser: each theme applies its palette, background and card radius; at 320 px, 4 themes × 3 fonts show no horizontal overflow and the menu scrolls inside the window.
+
 ## 2026-10-27: ITER: Basalt body in Cormorant Garamond
 
 - **What:** Joona picked Cormorant Garamond, the face of lovespark.love's lore lines, as Basalt's reading font ("elegant"), upright after comparing upright and italic previews. Basalt's default Serif setting now sets body text in Cormorant Garamond 500 at 20.5 px / 1.6 (its x-height is small), bold at 600; headings stay Cinzel, labels DM Mono. Four latin woff2 faces (500/600, upright/italic, 86 KB, SIL OFL 1.1, from @fontsource/cormorant-garamond 5.2.5 on jsDelivr, downloaded with Joona's OK) are inlined in `template/fonts.css`, so the page stays offline.
