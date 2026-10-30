@@ -97,6 +97,85 @@ RULES = [("Run it before you change it", "Most \"the model can't do X\" problems
          ("Test on your own task", "A small set of real inputs with the answers you'd accept, written before you start, beats every leaderboard and every loss curve."),
          ("Own what you ship", "A local model is yours: its privacy, its mistakes, and anything you removed from it.")]
 
+# Korean themes: the four Korean popup themes of the LoveSpark Retro Cursor extension
+# (themes/lovespark-retro-cursor/popup.css): same palettes and backgrounds, mapped onto this page's tokens.
+# Same table as the papers archive (lovespark.love/papers), with its card selectors mapped to this guide's widgets.
+# "stops" are the colours text can sit on (background gradient stops, card fills); the build checks them all.
+KOREAN = [
+    ("seoul", "Seoul Y2K", "서울", dict(
+        paper="#fdf9ff", deep="#ffe8f2", wash="#e9dcff", ink="#3a2a3a", soft="#4e3a50", muted="#6b4a66",
+        line="#ecd6ec", strong="#c4a8e0", accent="#a8134f", swatch="#ff5baa",
+        bg="linear-gradient(160deg, #dff1ff 0%, #ffe8f2 45%, #fff4d6 78%, #e9dcff 100%)",
+        stops=["#dff1ff", "#ffe8f2", "#fff4d6", "#e9dcff"],
+        extra="""{t} .calc, {t} .plaque, {t} .toc-group {{ border-radius: 10px; border-color: #c4a8e0; box-shadow: 3px 3px 0 #c4a8e0; }}
+{t} .calc:hover, {t} .calc:focus-within {{ box-shadow: 4px 4px 0 #ff8fc6; }}
+{t} .wbtn {{ border-radius: 6px; }}""")),
+    ("gingham", "Gingham Sticker", "깅엄", dict(
+        paper="#fffafc", deep="#ffe3ee", wash="#fff3f7", ink="#2a1824", soft="#3e2434", muted="#6e3a57",
+        line="#f0c3d5", strong="#2a1824", accent="#b0124f", swatch="#f6a6c4",
+        bg="linear-gradient(180deg, #fff3f7 0%, #fff3f7 100%)",
+        stops=["#fff3f7", "#fffafc"],
+        # the gingham itself stays off the reading area (text never sits on a pattern): a fixed top band and the footer
+        extra="""{t} body::before {{ content: ""; position: fixed; inset: 0 0 auto 0; height: 10px; z-index: 30; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(246,166,196,.6) 0 5px, transparent 5px 10px), repeating-linear-gradient(90deg, rgba(246,166,196,.6) 0 5px, transparent 5px 10px), #fff3f7; }}
+{t} footer {{ background: repeating-linear-gradient(0deg, rgba(246,166,196,.42) 0 9px, transparent 9px 18px), repeating-linear-gradient(90deg, rgba(246,166,196,.42) 0 9px, transparent 9px 18px), #fff3f7; }}
+{t} footer .foot-inner {{ background: #fffafc; border: 2px solid #2a1824; box-shadow: 3px 3px 0 #2a1824; border-radius: 14px; }}
+{t} .calc, {t} .plaque, {t} .toc-group.current {{ background: #fffafc; border: 2px solid #2a1824; border-radius: 14px; box-shadow: 3px 3px 0 #2a1824; }}
+{t} .calc:hover, {t} .calc:focus-within {{ box-shadow: 4px 4px 0 #ff4f9a; border-color: #2a1824; }}
+{t} .wbtn {{ border: 2px solid #2a1824; border-radius: 10px; box-shadow: 2px 2px 0 #2a1824; }}""")),
+    ("holo", "Holo Mochi", "모찌", dict(
+        paper="#faf7ff", deep="#f3ebff", wash="#e9d5ff", ink="#2b1b4a", soft="#3d2c63", muted="#54447a",
+        line="#e3d6f7", strong="#c7b2ee", accent="#6d35d8", swatch="#9b6cf0",
+        bg="radial-gradient(60% 45% at 12% 8%, #ffd1ea 0%, transparent 70%), radial-gradient(55% 40% at 92% 18%, #cfe6ff 0%, transparent 70%), radial-gradient(60% 50% at 80% 88%, #c8f7e1 0%, transparent 72%), radial-gradient(55% 45% at 10% 80%, #ffd8c2 0%, transparent 70%), linear-gradient(#efe4ff, #efe4ff)",
+        stops=["#ffd1ea", "#cfe6ff", "#c8f7e1", "#ffd8c2", "#efe4ff"],
+        extra="""{t} body {{ background-attachment: fixed; }}
+{t} .calc, {t} .plaque, {t} .toc-group {{ background: rgba(255,255,255,.62); border-color: rgba(255,255,255,.9); border-radius: 22px; box-shadow: 0 10px 28px rgba(140,100,230,.18), 0 2px 6px rgba(255,180,220,.3); }}
+{t} .calc:hover, {t} .calc:focus-within {{ background: rgba(250,247,255,.92); border-color: #9b6cf0; box-shadow: 0 14px 36px rgba(140,100,230,.3); }}
+{t} .wbtn {{ border-radius: 14px; }}""")),
+    ("neon", "Neon Usagi", "네온", dict(
+        paper="#120b18", deep="#1e1030", wash="#2a1740", ink="#f3eaf2", soft="#e4d5ea", muted="#c9b3dc",
+        line="#2e1a40", strong="#7d2a8e", accent="#ff46d6", on="#120b18", swatch="#ff46d6", dark=True,
+        bg="radial-gradient(80% 50% at 50% -10%, rgba(255,70,214,.22) 0%, transparent 70%), radial-gradient(70% 45% at 100% 110%, rgba(110,17,145,.45) 0%, transparent 70%)",
+        stops=["#120b18", "#3e1a40", "#3a0f50", "#2a1740"],   # base, top pink glow, bottom violet glow, card fill
+        extra="""{t} body {{ background-attachment: fixed; }}
+{t} .calc, {t} .plaque, {t} .toc-group {{ background: rgba(42,23,64,.88); border-color: rgba(255,70,214,.45); border-radius: 16px; }}
+{t} .calc:hover, {t} .calc:focus-within {{ border-color: #ff46d6; box-shadow: 0 0 0 1px rgba(255,70,214,.55), 0 0 14px rgba(255,70,214,.45), 0 0 34px rgba(255,70,214,.2); }}
+{t} .wbtn {{ border-radius: 12px; border-color: rgba(255,70,214,.35); }}""")),
+]
+
+def _lum(h):
+    c = [int(h[i:i+2], 16) / 255 for i in (1, 3, 5)]
+    c = [v / 12.92 if v <= .03928 else ((v + .055) / 1.055) ** 2.4 for v in c]
+    return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]
+def contrast(a, b):
+    A, B = _lum(a), _lum(b); return (max(A, B) + .05) / (min(A, B) + .05)
+def mix(a, b, t):
+    return "#" + "".join(f"{round(int(a[i:i+2], 16) * t + int(b[i:i+2], 16) * (1 - t)):02x}" for i in (1, 3, 5))
+
+def korean_css():
+    """CSS for the Korean themes; the build fails if any text pair drops below 4.8:1 (the template's floor)."""
+    out = "\n/* ---------- Korean themes (generated by scripts/build.py from KOREAN) ---------- */\n"
+    out += """/* the theme menu holds 9 themes: no mid-syllable Hangul breaks, capped to the window and scrollable */
+#themeMenu { min-width: 272px; max-width: calc(100vw - 32px); max-height: calc(100vh - 110px); max-height: calc(100dvh - 110px); overflow-y: auto; overscroll-behavior: contain; }
+#themeMenu button { white-space: nowrap; }
+#themeMenu .kr-name { margin-left: auto; padding-left: 10px; font-size: 12px; color: var(--muted); word-break: keep-all; }
+#themeMenu button[aria-checked="true"]:has(.kr-name)::after { margin-left: 8px; }
+"""
+    for key, name, _, t in KOREAN:
+        bgs = [t["paper"], t["deep"], t["wash"], mix(t["deep"], t["paper"], .6)] + t["stops"]
+        for fg in ("ink", "soft", "muted", "accent"):
+            for col in bgs:
+                r = contrast(t[fg], col)
+                assert r >= 4.8, f"{name}: {fg} on {col} is {r:.2f}:1, below 4.8"
+        on = t.get("on", "#ffffff")
+        assert contrast(on, t["accent"]) >= 4.8, f"{name}: text on accent below 4.8"
+        sel = f':root[data-theme="kr-{key}"]'
+        out += (f'{sel} {{\n  --paper: {t["paper"]}; --paper-deep: {t["deep"]}; --wash: {t["wash"]};\n'
+                f'  --ink: {t["ink"]}; --ink-soft: {t["soft"]}; --muted: {t["muted"]};\n  --line: {t["line"]}; --line-strong: {t["strong"]};\n'
+                f'  --accent: {t["accent"]}; --on-accent: {on};\n  --ls-bg-gradient: {t["bg"]};\n  color-scheme: {"dark" if t.get("dark") else "light"};\n}}\n'
+                + t["extra"].format(t=sel) + "\n")
+    return out
+
 ROMAN = {"1": "I", "2": "II", "3": "III", "4": "IV"}
 
 def toc_html(toc):
@@ -135,8 +214,9 @@ def build():
     mascot = (T / "mascot.datauri").read_text(encoding="utf-8").strip()
     ankh = (T / "ankh.datauri").read_text(encoding="utf-8").strip()   # Basalt wordmark, as on lovespark.love
     desc = "A first-principles, offline guide to local Qwen models in four parts: run one on a Mac, Linux or Windows; build retrieval and shared agent memory on it; fine-tune it with LoRA; understand abliteration, its costs and your responsibilities. With interactive calculators and verified sources. No paid API."
-    css = (T / "fonts.css").read_text(encoding="utf-8") + (T / "style.css").read_text(encoding="utf-8")
+    css = (T / "fonts.css").read_text(encoding="utf-8") + (T / "style.css").read_text(encoding="utf-8") + korean_css()
     themes = "".join(f'<button type="button" role="menuitemradio" aria-checked="false" data-theme="{k}"><span class="swatch" style="background:linear-gradient(135deg,{bg} 50%,{ac} 50%)"></span>{n}</button>' for k, n, bg, ac in THEMES)
+    korean = "".join(f'<button type="button" role="menuitemradio" aria-checked="false" data-theme="kr-{k}"><span class="swatch" style="background:linear-gradient(135deg,{t["paper"]} 50%,{t["swatch"]} 50%)"></span>{n}<span class="kr-name" lang="ko">{ko}</span></button>' for k, n, ko, t in KOREAN)
     fonts = "".join(f'<button type="button" role="menuitemradio" aria-checked="false" data-font="{k}"><span class="fontpreview" style="{st}" aria-hidden="true">Aa</span>{n}</button>' for k, n, st in FONTS)
     rules = "".join(f"<li><h3>{inline(t)}</h3><p>{inline(d)}</p></li>" for t, d in RULES)
     body = "\n\n    ".join(sections)
@@ -175,6 +255,7 @@ def build():
       <button id="themeBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="themeMenu">Change Font &amp; Theme</button>
       <div id="themeMenu" role="menu" aria-label="Theme and reading font" hidden>
         <p class="menu-label">Theme</p>{themes}
+        <p class="menu-label">Korean</p>{korean}
         <hr>
         <p class="menu-label">Reading font</p>{fonts}
       </div>
