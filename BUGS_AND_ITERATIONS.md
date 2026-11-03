@@ -1,5 +1,15 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-11-03: ITER: LLM101n callout links the repo and says what it is
+
+- **What:** Joona pointed at github.com/karpathy/LLM101n. The old callout ("LLM101n is not a course… has not been released") was correct, but it gave no link and no reason. It now links the repo and quotes the README ("this course does not yet exist", being built by Eureka Labs). It also gives the archive date (2024-08-01, only a README and an image) and maps the syllabus onto the free materials that already exist (Zero to Hero, minbpe, build-nanogpt, nanochat).
+- **Checked 2026-11-03:**
+  - GitHub API: archived, last push 2024-08-01, contents README.md and llm101n.jpg.
+  - eurekalabs.ai: "heads down building LLM101n" (2024-07-16), with no release.
+- **Verify:**
+  - `node scripts/verify.mjs`: PASS.
+  - `freshness.py`: PASS.
+
 ## 2026-11-03: ITER: Qwen3.8-27B plan implemented (quantization section, quant calculator, bigger models)
 
 - **What:** Joona said "implement it all". The 2026-11-03 plan is in, with the recommended §5 defaults.

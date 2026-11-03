@@ -2039,7 +2039,7 @@ Karpathy's Zero to Hero is the centre of this track. You write every piece of a 
 
 > ⚠ **nanoGPT is deprecated.** Karpathy marked [nanoGPT](https://github.com/karpathy/nanoGPT) deprecated in November 2025, and its README points to nanochat. Older tutorials still use it; the code runs, but new work happens in nanochat.
 
-> ◆ **LLM101n is not a course.** Karpathy's LLM101n has not been released. You may see it linked as a course; don't plan around it.
+> ◆ **LLM101n is a syllabus, not a course yet.** [karpathy/LLM101n](https://github.com/karpathy/LLM101n) ("Let's build a Storyteller") is a 17-chapter outline, from a bigram model to a deployed multimodal storyteller. Its README says the course "does not yet exist" and is being built by Eureka Labs, and the repo has been archived since 2024-08-01 with no lessons or code in it (checked 2026-11-03). Use it as a map: its first chapters (bigram, micrograd, MLP, attention, transformer, tokenization) are already covered by Zero to Hero, minbpe and build-nanogpt above, and nanochat covers the path through fine-tuning to a chat web app.
 
 ### Track 3 · Run and serve (1–2 weeks, alongside Part 1)
 
