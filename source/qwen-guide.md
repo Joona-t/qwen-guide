@@ -1,6 +1,6 @@
 # Qwen, locally: run it, fine-tune it, understand abliteration
 
-> Written **October 2026** for Qwen3.5 (0.8B / 2B / 4B / 9B), on an Apple Silicon Mac or a PC with an NVIDIA GPU. Every command, version and number was checked against a primary source that month: Ollama's and Hugging Face's documentation, PyPI, the `mlx-lm` and Unsloth docs, model cards, arXiv. Anything else is labelled *secondary* (a blog or forum) or *untested*. Fast-moving facts go stale, so re-check versions before you rely on them.
+> Covers **Qwen3.5** (0.8B / 2B / 4B / 9B) for 8–16 GB machines, **Qwen3.6-27B and Qwen3.8-27B** for 24 GB, **two RTX 3090s** (48 GB), and larger mixture-of-experts models, on an Apple Silicon Mac or a PC with an NVIDIA GPU. Written October 2026 and re-checked **2026-11-03**. Every command, version and number was checked against a primary source, with the date given where it matters: Ollama's and Hugging Face's documentation, PyPI, the `mlx-lm` and Unsloth docs, model cards, arXiv. Anything else is labelled *secondary* (a blog or forum) or *untested*. Fast-moving facts go stale, so re-check versions before you rely on them.
 
 **Who this is for.** Anyone who wants a capable language model on their own machine and wants to understand what they're running. No paid API is involved anywhere, and nothing you do here leaves your computer.
 
@@ -22,7 +22,7 @@ Find your hardware, run the first model it lists, then read the sections in the 
 | Mac, 24–32 GB | About 18–24 GB usable | `qwen3.5:9b`; on 32 GB, try Qwen3.8-27B at 4-bit (18 GB) | Ollama | [Which Qwen?](#models), [Tokens, context and the KV cache](#tokens), [Benchmark your machine](#bench) |
 | Mac, 64 GB+ | About 48 GB usable at 64 GB | Qwen3.8-27B at 4-bit, or Qwen3.6-35B-A3B (22.1 GB at Q4) | Ollama or LM Studio (MLX) | [Which Qwen?](#models), [Faster and smaller](#faster), [Benchmark your machine](#bench) |
 | NVIDIA, 8–16 GB | VRAM minus about 1 GB, minus the KV cache | `qwen3.5:4b` on 8 GB, `qwen3.5:9b` on 12–16 GB | Ollama, then llama.cpp for MoE offload | [Install Ollama](#install), [Running on an NVIDIA PC](#nvidia-pc), [Faster and smaller](#faster) |
-| RTX 3090 / 4090, 24 GB | About 23 GB, minus the KV cache | Qwen3.8-27B Q4_K_M (19 GB, ~4-6 GB left) | Ollama, then llama.cpp | [Running on an NVIDIA PC](#nvidia-pc), [Tokens, context and the KV cache](#tokens), [Benchmark your machine](#bench) |
+| RTX 3090 / 4090, 24 GB | About 23 GB, minus the KV cache | Qwen3.8-27B Q4_K_M (19 GB, ~4 GB left) | Ollama, then llama.cpp | [Running on an NVIDIA PC](#nvidia-pc), [Tokens, context and the KV cache](#tokens), [Benchmark your machine](#bench) |
 | Two RTX 3090s, 48 GB | About 46 GB (1 GB off each card), minus the KV cache, split across both cards | Qwen3.8-27B Q8_0 (28.6 GB) or Qwen3.6-35B-A3B Q8_0 (36.9 GB) | llama.cpp layer split, or vLLM on Linux | [Running on an NVIDIA PC](#nvidia-pc), [Benchmark your machine](#bench) |
 | AMD, Intel Arc or CPU-only | Same as discrete GPU; CPU-only uses system RAM | `qwen3.5:4b`, or `qwen3.5:2b` on CPU | Ollama | [Install Ollama](#install) (this guide covers these briefly) |
 
@@ -52,7 +52,7 @@ A language model is a file of numbers, called weights, plus a small program that
 
 Three facts decide almost everything about running one well:
 
-**Memory sets the ceiling.** The whole model has to be in memory while it runs. The size on disk is roughly `parameters × bits ÷ 8`: a 4B model at 16-bit is about 9 GB; at 4-bit, about 2.5 GB. Add a gigabyte or two for the working memory that grows with the length of the conversation (the KV cache).
+**Memory sets the ceiling.** The whole model has to be in memory while it runs. The size on disk is roughly `parameters × bits ÷ 8`: a 4B model at 16-bit is about 9 GB; at 4-bit, about 2.3–2.5 GB. Add a gigabyte or two for the working memory that grows with the length of the conversation (the KV cache).
 
 **Memory bandwidth sets the speed.** For every generated token, the program reads the entire model from memory. So tokens per second is roughly memory bandwidth divided by model size. A Mac mini with the M4 chip (2024) reads about 120 GB/s, so a 6.6 GB model tops out near 18 tokens per second there; the current base Mac mini (M6) reads 153 GB/s, which lifts that ceiling to about 23. Real runs land a bit below either figure. A discrete GPU is several times faster because its memory is.
 
@@ -92,15 +92,15 @@ Qwen is one family among many, and "open weights" no longer means "runs on your 
 | Family | Publisher | Laptop sizes (4-bit) | License | Released | Notes |
 |---|---|---|---|---|---|
 | **Qwen3.5** 0.8B / 2B / 4B / 9B | Alibaba | 1.2 / 2.7 / 3.3 / 6.6 GB; 27B at 17 GB needs 24 GB | Apache-2.0 | Feb–Mar 2026 | 200+ languages, text + image input, 256K context, best small tool-caller. This guide's pick for 16 GB. |
-| **Qwen3.8-27B** | Alibaba | 18 GB, 24 GB machines only | Apache-2.0 | Aug 2026 | The newest Qwen that fits anything portable: dense, text + image, 256K. Supersedes Qwen3.5-27B and Qwen3.6-27B (17 GB) on a 24 GB machine. |
+| **Qwen3.8-27B** | Alibaba | 18 GB (Ollama) / 19.0 GB (Q4_K_M GGUF); a 24 GB GPU or a 32 GB+ Mac | Apache-2.0 | Aug 2026 | The newest 27B Qwen (no Qwen4 weights yet): dense, text + image, 256K. Supersedes Qwen3.5-27B and Qwen3.6-27B (17 GB). |
 | **Gemma 4** E2B / E4B / 12B / 26B-A4B / 31B | Google | 4.3–4.6 / 6.1–6.6 / 7.2–8.0 GB; 26B-A4B and 31B at 16–20 GB need 24 GB | Apache-2.0 | Mar–Jun 2026 | E2B, E4B and the 12B take text, image *and audio*; 26B-A4B and 31B are text + image. 128K context on the small ones, 256K above. Quantization-aware checkpoints hold quality at 4-bit. |
-| **gpt-oss-20b** | OpenAI | 14 GB; tight on 16 GB, fine on 24 GB | Apache-2.0 | Aug 2025 | 21B total, 3.6B active, adjustable reasoning effort, text only, 128K. Still OpenAI's only laptop-size open model; no successor as of Oct 2026. |
+| **gpt-oss-20b** | OpenAI | 14 GB; tight on 16 GB, fine on 24 GB | Apache-2.0 | Aug 2025 | 21B total, 3.6B active, adjustable reasoning effort, text only, 128K. Still OpenAI's only laptop-size open model; no successor at the 2026-10-15 check. |
 | **Ministral 3** 3B / 8B / 14B | Mistral | 3.0 / 6.0 / 9.1 GB | Apache-2.0 | Dec 2025 | Base, Instruct and Reasoning at each size, 256K, text + image, function calling. Mistral's 2026 open releases (Small 4 at 119B, Medium 3.5 at 128B) are too large for a laptop, so this is still its laptop line. |
 | **Muse Glimmer 30B** | Meta | 18 GB, 24 GB machines only | Apache-2.0 | Aug 2026 | Meta's current open model, distilled from its closed Muse Spark; ~29.6B dense, text + image, 131K. Meta has shipped no Llama since Llama 4 (Apr 2025), whose smallest member is 67 GB at 4-bit. |
 | **Granite 4.2** 3B / 8B / 30B | IBM | 2.2 / 5.3 GB; 30B at 17–18 GB needs 24 GB | Apache-2.0 | Aug 2026 | Dense reasoning family with thinking and non-thinking modes, 128K native, tool calling. Built for retrieval and tool use; small and well-behaved. |
-| **LFM2.5** 8B-A1B / 24B-A2B | Liquid AI | 5.2 GB; 24B-A2B at 15 GB needs 24 GB | LFM Open License 1.0 (custom) | May–Oct 2026 | Sparse mixture-of-experts built for speed on CPUs and laptops (1.5B and 2.45B active), 128K, text only. The 24B-A2B shipped 2026-10-12, the newest laptop-class model in this table. |
+| **LFM2.5** 8B-A1B / 24B-A2B | Liquid AI | 5.2 GB; 24B-A2B at 15 GB needs 24 GB | LFM Open License 1.0 (custom) | May–Oct 2026 | Sparse mixture-of-experts built for speed on CPUs and laptops (1.5B and 2.45B active), 128K, text only. The 24B-A2B shipped 2026-10-12. |
 | **Nemotron 3 Nano 4B** | NVIDIA | 2.8 GB | NVIDIA Nemotron Open Model License | Mar 2026 | 256K context, tool calling. The 30B-A3B sibling is 24 GB at 4-bit and needs a 32 GB machine. Licenses differ across the Nemotron line, so read each card. |
-| **Phi-4** mini 3.8B / 14B / reasoning-vision 15B | Microsoft | 2.5 / 9.1 GB; vision model ~10 GB + projector | MIT | Dec 2024 – Mar 2026 | The reasoning-vision 15B (Mar 2026, 16K context) is the newest Phi; there is no Phi-5 as of Oct 2026. |
+| **Phi-4** mini 3.8B / 14B / reasoning-vision 15B | Microsoft | 2.5 / 9.1 GB; vision model ~10 GB + projector | MIT | Dec 2024 – Mar 2026 | The reasoning-vision 15B (Mar 2026, 16K context) is the newest Phi; there was no Phi-5 at the 2026-10-15 check. |
 | **GLM-4.7-Flash** 30B-A3B | Z.ai (Zhipu) | 19 GB, 24 GB machines only | MIT | Jan 2026 | The only GLM with a local Ollama tag; 198K context, text, tools and thinking. Everything in the GLM-5.x line is far too large (see below). |
 | **DeepSeek-R1-0528-Qwen3-8B** | DeepSeek | 5.2 GB | MIT | May 2025 | The only DeepSeek-branded model that fits a laptop: R1 reasoning distilled onto Qwen3-8B, text only, 128K. Every DeepSeek V4-generation model is 284B or larger. |
 | **Qwen2.5-Coder** 7B / 14B, **Qwen3-Coder-30B-A3B** | Alibaba | 4.7 / 9.0 GB; 30B-A3B at 19 GB needs 24 GB | Apache-2.0 | Nov 2024 / Jul 2025 | Both document fill-in-the-middle, which newer agentic coders (Qwen3.8-27B, Granite 4.2, Devstral Small 2) don't, so they remain the editor-autocomplete picks. |
@@ -115,7 +115,7 @@ Qwen is one family among many, and "open weights" no longer means "runs on your 
 | **DeepSeek-V4.1-Flash** | DeepSeek | 552B backbone, 8B/16B active | MIT | Sep 2026 | DeepSeek's current release: text + image, 1M context. The model its API now serves for everything. |
 | **GLM-5.3** | Z.ai (Zhipu) | 753B (about 40B active, per the GitHub README) | GLM-5.3 License (custom) | Aug 2026 | Z.ai's flagship coding and agent model, text only, 1M context. The first GLM to leave the MIT license. |
 | **GLM-5.3-Flash** | Z.ai (Zhipu) | 320B total, 18B active | MIT | Aug 2026 | Natively multimodal. "Flash" no longer means laptop-class: about 200 GB at 4-bit. |
-| **Mistral Large 4** | Mistral | 1T total, 52B active | not stated | Oct 2026 | Announced 2026-10-06 with weights promised "by the end of the month." Not open as of 2026-10-15. Mistral Large 3 (675B, Apache-2.0, Dec 2025) is the current download. |
+| **Mistral Large 4** | Mistral | 1T total, 52B active | Mistral Ecosystem Open-Weight License (modified MIT; a Model-as-a-Service business needs a separate licence) | Oct 2026 | Weights are public on Hugging Face as of 2026-11-03 (`mistralai/Mistral-Large-4-1T-A52B`, plus an NVFP4 build). Text + image, 1M context, reasoning effort low/medium/high, an embedded DSpark draft head. |
 | **MiniMax-M3** | MiniMax | ~428B total, ~23B active | MiniMax Community License (custom; restrictions on commercial use) | Jun 2026 | Natively multimodal, 1M context. Its license is stricter than the earlier M2 line's. |
 | **gpt-oss-120b** | OpenAI | 117B total, 5.1B active | Apache-2.0 | Aug 2025 | 65 GB at 4-bit: a 64 GB-plus Mac or an 80 GB GPU. The big sibling of the laptop-size 20B. |
 | **Llama 4** Scout / Maverick | Meta | 109B / 400B total, 17B active | Llama 4 Community License | Apr 2025 | Still the newest Llama. Scout is 67 GB at 4-bit. Useful mainly as the anchor for Llama-format tooling. |
@@ -125,7 +125,7 @@ Qwen is one family among many, and "open weights" no longer means "runs on your 
 
 **Why the frontier matters even if you can't run it.** Three reasons. The frontier models are the API fallback for the hard calls a local model can't make. Their labs often ship a small sibling trained the same way (Qwen3.8-27B next to the 2.4T, Gemma 4 E2B next to the 31B). And their licenses are drifting away from MIT and Apache toward custom terms with revenue clauses, which matters the moment you build something on one.
 
-> 📝 **Watch list, unverified on 2026-10-15.** Qwen4 is described as "in training" in secondary reports, with no date. NVIDIA announced a Nemotron 3.5 Bolt 74B-A9B for mid-October. JetBrains published Mellum2.1, a 12B-A2.5B coding model, on 2026-10-07 with an official GGUF at 7–8 GB; its benchmark numbers are self-reported. Treat all three as leads until their model cards exist and you've read them.
+> 📝 **Watch list, checked 2026-11-03.** **Qwen4** was announced on 2026-09-22 as "in training"; Qwen's Hugging Face organisation has no Qwen4 weights yet. **NVIDIA Nemotron 3.5 Bolt 74B-A9B 24GB** is out (Oct 2026, OpenMDW-1.1): 74B total, 9B active, trained with native 2-bit quantization so the GGUF is 22.0 GB, built to fit one 24 GB card. NVIDIA's own vLLM recipe targets A100, H100 and Blackwell; nobody in this guide's sources has run it on a 3090 yet. **JetBrains Mellum2.1**, a 12B-A2.5B coding model, has an official GGUF (7–8 GB, 2026-10-07) and an MTP build (2026-10-30); its benchmark numbers are self-reported. Read each model card before relying on any of them.
 
 There are more families than this, and new releases arrive weekly. Treat any table like this one, including this one, as a dated snapshot, and read the model card before you commit to a family.
 
@@ -143,7 +143,7 @@ There are more families than this, and new releases arrive weekly. Treat any tab
 <!-- section id="models" toc="Which Qwen" kicker="Part 1 · Run Qwen locally" -->
 ## Which Qwen?
 
-Qwen is Alibaba's family of open-weight models. The useful line for a personal machine in October 2026 is **Qwen3.5**, released in February and March 2026. Its small models are **0.8B, 2B, 4B and 9B**. All are Apache-2.0 licensed, take text and images as input, and have a 256K-token context window. Newer lines (Qwen3.6, Qwen3.8) only ship at 27B and larger, so Qwen3.5 is still the right pick for a 16 GB machine. On a 24 GB machine, Qwen3.8-27B (18 GB at 4-bit) is the newer choice.
+Qwen is Alibaba's family of open-weight models. Which line you want depends on your memory. For 8–16 GB, it is **Qwen3.5**, released in February and March 2026: its small models are **0.8B, 2B, 4B and 9B**, all Apache-2.0, taking text and images, with a 256K-token context window. The newer lines (Qwen3.6, Qwen3.8) only ship at 27B and larger. For a 24 GB GPU, two GPUs or a 32 GB+ Mac, the pick is **Qwen3.8-27B** (Aug 2026, 18 GB at 4-bit on Ollama, 19.0 GB as a Q4_K_M GGUF), the newest 27B as of 2026-11-03.
 
 | Model | 4-bit size on Ollama | Fits comfortably in | Good for |
 |---|---|---|---|
@@ -151,13 +151,13 @@ Qwen is Alibaba's family of open-weight models. The useful line for a personal m
 | Qwen3.5-2B | 2.7–3.1 GB | 8 GB | fast extraction and summaries; first fine-tuning experiments |
 | Qwen3.5-4B | 3.3–4.0 GB | 8 GB, with headroom at 16 GB | the everyday local assistant; strong on structured output |
 | Qwen3.5-9B | 6.6–7.6 GB | 16 GB | the quality pick; best local tool-calling at this size |
-| Qwen3.5-27B | 17–20 GB | 24 GB | dense, not mixture-of-experts; on a 24 GB machine prefer Qwen3.8-27B (18 GB, Aug 2026) |
+| Qwen3.5-27B | 17–20 GB | 24 GB GPU, 32 GB Mac | dense, not mixture-of-experts; prefer Qwen3.8-27B (18 GB, Aug 2026) |
 
 The sizes are what Ollama downloads for its default tags, which include the vision encoder. Larger Qwen3.5 models (35B-A3B, 122B-A10B, 397B-A17B) are mixture-of-experts and need workstation memory.
 
 **Pick by task, not by ego.** Run your real prompts through the 4B first. If it does the job, you've saved memory for context and other programs. Move to the 9B when answers need more reasoning or when tool-calling has to be reliable. Tool-calling reliability drops sharply below 9B: on the BFCL benchmark the 9B scores about 66, the 4B about 50, the 2B about 44. Epoch AI rated that benchmark "Flawed" in September 2026, so treat the gap as a ranking, not a measurement.
 
-> ⚠ **The 4B and 9B think by default.** They write a `<think>` block before answering. That's good for hard questions and slow for everything else. Only the 0.8B and 2B default to non-thinking. That's what the models' own chat templates do; Unsloth's Qwen3.5 page describes all four as reasoning-off by default, so check the `think` setting on your runtime rather than assuming. Section "Thinking mode" below shows how to switch it.
+> ⚠ **The 4B and 9B think by default, and so does Qwen3.8-27B.** They write a `<think>` block before answering. That's good for hard questions and slow for everything else. Only the 0.8B and 2B default to non-thinking. That is what the models' own chat templates do (checked 2026-11-03: the 4B and 9B templates think unless `enable_thinking` is false; the 0.8B's only thinks when it is true). Unsloth's Qwen3.5 page describes all four as reasoning-off, which is a runtime default, not the template's, so check the `think` setting on your runtime. Section "Thinking mode" below shows how to switch it.
 
 **Other Qwen models you'll see.** `Qwen2.5-Coder` (7B, 14B, 32B) is older but still the best Qwen for editor autocomplete, since it supports fill-in-the-middle. `Qwen3-VL` is a vision line. `Qwen3-Embedding-0.6B` and `Qwen3-Reranker` are for search and retrieval. `Qwen3Guard` is a safety classifier. None of these are needed to get started.
 
@@ -200,7 +200,7 @@ ollama run hf.co/unsloth/Qwen3.5-4B-GGUF:Q4_K_M
 ```
 The part after the colon picks the quantization file from the repo; without it Ollama takes `Q4_K_M` when the repo has one. Each GGUF model page on the Hub also offers an "Use this model → Ollama" menu that writes the command for you. This is handy for community builds that aren't in Ollama's own library, including fine-tuned and abliterated variants, and it's exactly where the trust question above matters most.
 
-**Licenses.** Qwen3.5's small models are Apache-2.0: you can use, modify and redistribute them, including commercially, if you keep the license notice. Other model families differ. Llama has its own community license. Gemma 4 and Meta's Muse Glimmer are Apache-2.0. Licenses diverge inside the Qwen3.8 line: the 27B is Apache-2.0, the 2.4T-A95B uses the Qwen3.8-Max License, and Flash-Next uses the Qwen Community License 1.0. GLM-5.3, Kimi K3 and MiniMax-M3 ship under custom licenses rather than MIT. The model card tells you. Derivatives you publish inherit the base model's terms, so name the base model in your own card.
+**Licenses.** Qwen3.5's small models are Apache-2.0: you can use, modify and redistribute them, including commercially, if you keep the license notice. Other model families differ. Llama has its own community license. Gemma 4 and Meta's Muse Glimmer are Apache-2.0. Licenses diverge inside the Qwen3.8 line: the 27B is Apache-2.0, the 2.4T-A95B uses the Qwen3.8-Max License, and Qwen3.8-Flash-Next (about 180B total, mixture-of-experts) uses the Qwen Community License 1.0, which requires a separate licence for Model-as-a-Service and AI coding or office-assistant businesses. GLM-5.3, Kimi K3 and MiniMax-M3 ship under custom licenses rather than MIT. The model card tells you. Derivatives you publish inherit the base model's terms, so name the base model in your own card.
 
 <!-- section id="install" toc="Install Ollama" kicker="Part 1 · Run Qwen locally" -->
 ## Install Ollama and run your first Qwen
@@ -225,7 +225,7 @@ Always write the tag. A bare `ollama run qwen3.5` pulls the **9B**, about 7 GB, 
 
 **Check that it works:**
 ```bash
-ollama --version                              # expect the latest release (v0.40.x in Oct 2026)
+ollama --version                              # expect the latest release (v0.40.14 on 2026-11-03)
 ollama list                                   # models on disk
 ollama ps                                     # what's loaded now, and whether it's on the GPU
 curl -s http://127.0.0.1:11434/api/tags       # the server answers on loopback
@@ -245,7 +245,7 @@ launchctl setenv OLLAMA_MAX_LOADED_MODELS 1    # one model resident at a time
 launchctl setenv OLLAMA_NUM_PARALLEL 1         # don't multiply the KV cache
 launchctl setenv OLLAMA_KEEP_ALIVE 5m          # unload after five idle minutes
 ```
-On a Mac with more memory, the first line is the only one that matters.
+On a Mac with more memory, the first line matters most; the KV-cache lines matter again once you run a 27B at long context.
 
 ### Settings on Linux
 
@@ -288,7 +288,7 @@ OLLAMA_KV_CACHE_TYPE=q8_0        # about half the KV memory of f16; needs flash 
 OLLAMA_CONTEXT_LENGTH=32768      # the FAQ default is 4096; check yours with ollama ps
 CUDA_VISIBLE_DEVICES=GPU-xxxxxxxx  # pin a card; get the UUID from nvidia-smi -L
 ```
-32K is a starting point, not a measured limit. For Qwen3.6-27B, the KV cache costs 64 KiB per token at f16, which is 2 GiB per 32K tokens (derived), and q8_0 halves that. Raise the context in steps and watch `ollama ps`: if the split stops showing 100% GPU, you went too far. Use the GPU's UUID rather than its number in `CUDA_VISIBLE_DEVICES`, because Ollama's docs say numeric ordering may vary. Leave that line out on a single-GPU box.
+32K is a starting point, not a measured limit. For Qwen3.6-27B and Qwen3.8-27B (identical layout), the KV cache costs 64 KiB per token at f16, which is 2 GiB per 32K tokens (derived from `config.json`), and q8_0 halves that. Raise the context in steps and watch `ollama ps`: if the split stops showing 100% GPU, you went too far. Use the GPU's UUID rather than its number in `CUDA_VISIBLE_DEVICES`, because Ollama's docs say numeric ordering may vary. Leave that line out on a single-GPU box.
 
 > ◆ **The KV setting is global.** `OLLAMA_KV_CACHE_TYPE` applies to every model the server loads, and it only takes effect with flash attention on. If one model misbehaves with q8_0, go back to `f16` for all of them.
 
@@ -327,7 +327,7 @@ Two hardware facts matter later. The 3090 has no FP8 tensor cores, so FP8 models
 
 | Model | Type | 4-bit file | Left for KV cache | Context and notes | Decode |
 |---|---|---|---|---|---|
-| Qwen3.8-27B Q4_K_M | Dense | 19 GB | ~4-6 GB | ~64K at f16 KV or ~128K at q8_0 KV, if its layout matches Qwen3.6 (UNCERTAIN) | Ceiling ~49 t/s (derived); Qwen3.6-27B at Q3_K_XL measured 32-38 (secondary) |
+| Qwen3.8-27B Q4_K_M | Dense | 19 GB | ~4 GB | ~64K at f16 KV or ~128K at q8_0 KV (64 KiB per token, same layout as Qwen3.6-27B) | Ceiling ~49 t/s (derived); Qwen3.6-27B at Q3_K_XL measured 32-38 (secondary) |
 | Qwen3.6-35B-A3B | MoE, 3B active | 22.1 GB Q4; 16.8 GB UD-Q3_K_XL | ~0.5-1.5 GB at Q4 | Use Q3_K_XL for long context, or `--n-cpu-moe` | 136.8 t/s at 370 W (secondary) |
 | Qwen3-Coder-30B-A3B | MoE, 3B active | 18.6 GB Q4_K_M; 17.7 GB UD-Q4_K_XL | ~4-6 GB | Moderate (UNCERTAIN) | Not measured |
 | GLM-4.7-Flash Q4_K_M | MoE, 30B-A3B | 18.3 GB | ~4-5 GB | Compact KV (UNCERTAIN) | Not measured |
@@ -342,7 +342,7 @@ llama-server -hf ggml-org/Qwen3.8-27B-GGUF:Q4_K_M -ngl 99 -fa on -c 32768 --port
 ```
 `-ngl 99` puts every layer on the GPU. `-c` sets the context window. Raise it until VRAM is nearly full, and use `-ctk q8_0 -ctv q8_0` to fit about twice as much.
 
-> 📝 **The KV cache for Qwen3.6-27B, worked through.** Only its 16 full-attention layers keep a cache. 16 layers × 4 KV heads × 256 head dim × 2 (K and V) × 2 bytes = 64 KiB per token at f16. That is 2 GiB per 32K tokens. Each extra parallel slot needs its own cache.
+> 📝 **The KV cache for Qwen3.6-27B and Qwen3.8-27B, worked through.** The two have identical configs. Only their 16 full-attention layers keep a cache. 16 layers × 4 KV heads × 256 head dim × 2 (K and V) × 2 bytes = 64 KiB per token at f16. That is 2 GiB per 32K tokens. Each extra parallel slot needs its own cache.
 
 <!-- widget:fit -->
 
@@ -380,9 +380,10 @@ The cap resets on reboot, so re-apply it at boot with a systemd unit. The effect
 
 ### Two RTX 3090s (48 GB)
 
-Two cards give you 48 GB, but each card still holds only its share. There are two ways to split a model.
+Two cards give you 48 GB, but each card still holds only its share. llama.cpp has three ways to split a model.
 - **By layers** (llama.cpp's default, `-sm layer`). Each card holds a block of layers and they take turns. It is simple and works over any PCIe link.
 - **By rows** (`-sm row`). Each layer is split across both cards. It needs more traffic between them. `-ts 1,1` sets the share per card, and `-mg` picks the main GPU.
+- **By tensor** (`-sm tensor`, new and marked experimental in llama.cpp v0.8.0, 2026-10-28). Weights and the KV cache are split so both cards work on every token, like vLLM's tensor parallelism. Whether it supports Qwen3.8-27B's hybrid architecture on your build is untested here: compare it against `-sm layer` with `llama-bench` before relying on it.
 
 ```bash
 llama-server -hf ggml-org/Qwen3.8-27B-GGUF:Q8_0 -ngl 99 -fa on -sm layer -ts 1,1 -c 65536 --port 8080
@@ -457,7 +458,7 @@ KV bytes = 2 × layers × kv_heads × head_dim × context × bytes_per_value × 
 
 The 2 is one key plus one value. `layers` counts only the layers that keep a cache. `bytes_per_value` is 2 for f16 and about 1 for q8_0.
 
-**Worked example: Qwen3.6-27B.** Its model card lists 64 layers, but in a repeating pattern of three linear-attention (Gated DeltaNet) layers and one full-attention layer. Only the 16 full-attention layers keep a growing cache, each with 4 KV heads of dimension 256. Per token at f16:
+**Worked example: Qwen3.6-27B and Qwen3.8-27B** (identical configs). Each lists 64 layers, but in a repeating pattern of three linear-attention (Gated DeltaNet) layers and one full-attention layer. Only the 16 full-attention layers keep a growing cache, each with 4 KV heads of dimension 256. Per token at f16:
 
 ```text
 2 × 16 × 4 × 256 × 2 bytes = 65,536 bytes = 64 KiB per token
@@ -468,7 +469,7 @@ The 2 is one key plus one value. `layers` counts only the layers that keep a cac
 - **Why q8_0 KV halves it.** Storing each value in 8 bits instead of 16 cuts the cache to about half: roughly 32 KiB per token, or about 1 GiB per 32K for the 27B. The Ollama FAQ calls the precision loss very small. In Ollama, set `OLLAMA_FLASH_ATTENTION=1` and `OLLAMA_KV_CACHE_TYPE=q8_0` (it is a global setting). In llama.cpp, use `-ctk q8_0 -ctv q8_0`.
 - **Why `OLLAMA_NUM_PARALLEL` multiplies it.** Each parallel slot gets its own context. The FAQ says required memory scales with `OLLAMA_NUM_PARALLEL` × `OLLAMA_CONTEXT_LENGTH`. Two slots of 32K on the 27B at f16 is 4 GiB of cache, not 2. On a tight machine keep it at 1.
 
-> ◆ **The constants are per model.** The 64 KiB figure is verified for Qwen3.6-27B only. Read `num_hidden_layers`, `num_key_value_heads`, `head_dim` and the layer layout from the model's `config.json` before you trust the formula for another model. Runtimes also add some fixed buffers on top, so leave headroom.
+> ◆ **The constants are per model.** The 64 KiB figure is verified for Qwen3.6-27B and Qwen3.8-27B, which share a config. Read `num_hidden_layers`, `num_key_value_heads`, `head_dim` and the layer layout from the model's `config.json` before you trust the formula for another model. Runtimes also add some fixed buffers on top, so leave headroom.
 
 ### Chat templates
 
@@ -502,7 +503,9 @@ The Apple column is derived: the GPU-only formats run on CUDA engines, which don
 <!-- section id="thinking" toc="Thinking mode" kicker="Part 1 · Run Qwen locally" -->
 ## Thinking mode
 
-Qwen3.5 4B and 9B reason out loud in a `<think>` block before answering. It helps with maths, planning and tricky instructions. It costs time, and quantized models in thinking mode truncate answers more often because they think for longer. For extraction, classification, chat and tool calls, turn it off.
+Qwen3.5 4B and 9B, and Qwen3.8-27B, reason out loud in a `<think>` block before answering. It helps with maths, planning and tricky instructions. It costs time, and a long reasoning trace can run into the output-token limit, so raise that limit when thinking is on. For extraction, classification, chat and tool calls, turn it off.
+
+**Qwen3.8-27B adds two switches.** `reasoning_effort` tunes how long it thinks, and `preserve_thinking` (on by default) keeps the reasoning from earlier turns in the conversation, which helps agents stay consistent but uses context. Turn it off with `"chat_template_kwargs": {"preserve_thinking": false}` on a vLLM or SGLang server (Qwen3.8-27B model card, checked 2026-11-03).
 
 - **In the terminal:** `ollama run qwen3.5:4b --think=false`, or type `/set nothink` inside a session. `--hidethinking` keeps the reasoning but hides it.
 - **Through the API:** send a top-level `"think": false` field on `/api/chat` or `/api/generate`. Inside `options` it is silently ignored.
@@ -522,7 +525,7 @@ At each step the model gives every possible next token a probability. Sampling s
 - **min_p** drops any token less likely than min_p times the top token's probability. 0 turns it off.
 - **presence_penalty** pushes down any token that has already appeared, which fights loops. **repetition_penalty** (llama.cpp and Ollama call it `repeat_penalty`) scales down repeated tokens; 1.0 turns it off.
 
-**What Qwen recommends.** The official [Qwen3.5-9B model card](https://huggingface.co/Qwen/Qwen3.5-9B) gives these (checked 2026-10-16):
+**What Qwen recommends.** The settings differ by model, so use the ones from your model's card. The [Qwen3.5-9B model card](https://huggingface.co/Qwen/Qwen3.5-9B) gives these (checked 2026-10-16):
 
 | Mode and task | temperature | top_p | top_k | min_p | presence_penalty | repetition_penalty |
 |---|---|---|---|---|---|---|
@@ -530,6 +533,13 @@ At each step the model gives every possible next token a probability. Sampling s
 | Thinking, precise coding | 0.6 | 0.95 | 20 | 0.0 | 0.0 | 1.0 |
 | Non-thinking, general | 0.7 | 0.8 | 20 | 0.0 | 1.5 | 1.0 |
 | Non-thinking, reasoning | 1.0 | 0.95 | 20 | 0.0 | 1.5 | 1.0 |
+
+The [Qwen3.8-27B model card](https://huggingface.co/Qwen/Qwen3.8-27B) gives two presets (checked 2026-11-03). Note the thinking preset's presence_penalty is 0, not Qwen3.5's 1.5:
+
+| Qwen3.8-27B mode | temperature | top_p | top_k | min_p | presence_penalty | repetition_penalty |
+|---|---|---|---|---|---|---|
+| Thinking (the default) | 1.0 | 0.95 | 20 | 0.0 | 0.0 | 1.0 |
+| Non-thinking | 0.7 | 0.8 | 20 | 0.0 | 1.5 | 1.0 |
 
 > ◆ **The card isn't fully consistent, and support varies.** Its Best Practices section lists a different non-thinking reasoning set (temperature 1.0, top_p 1.0, top_k 40, presence_penalty 2.0). It also warns that support for these settings varies by framework, and that a high presence penalty can cause language mixing and a slight drop in quality. If you see Chinese words in English answers, lower presence_penalty first.
 
@@ -572,7 +582,7 @@ For one person on one machine, start with Ollama. Add the others when a specific
 
 ### Runtimes on a PC
 
-On Windows and Linux with an NVIDIA card, the field is wider. Versions were current on 16 October 2026 and move fast.
+On Windows and Linux with an NVIDIA card, the field is wider. The table was checked on 16 October 2026; llama.cpp v0.8.0 (28 October) added `-sm tensor` and MTP/DFlash speculative decoding since, so the field moves fast.
 
 | Runtime | OS | Best for | Multi-GPU | Formats |
 |---|---|---|---|---|
@@ -602,7 +612,7 @@ For the 4B and 9B class, `mlx-lm` is the measured decode-speed leader on Apple S
 
 **Speculative decoding is a free throughput lever.** A tiny draft model proposes tokens and the bigger target model checks them in parallel. LM Studio supports it on Apple Silicon, both with multi-token-prediction (MTP) heads and with a classic draft model, for a reported 20–50% generation speedup; `mlx-lm` supports it natively. On 16 GB both models must fit, so it pairs best with a 4B target and a sub-1B draft, not the 9B. Ollama also lists Qwen3.5 MTP builds (`4b-mtp-q4_K_M` at 4.1 GB, `9b-mtp-q4_K_M` at 9.0 GB, large for 16 GB).
 
-> ◆ **A/B it on your machine.** Reported GitHub issues (on an M1 Max, not an M4; secondary evidence) show llama.cpp's MTP path *slower* on Metal for Qwen3.5-9B, by 11–28%. Measure before leaving it on.
+> ◆ **A/B it on your machine.** Reported GitHub issues (on an M1 Max, not an M4; secondary evidence) show llama.cpp's MTP path *slower* on Metal for Qwen3.5-9B, by 11–28%. That was before llama.cpp v0.8.0 (2026-10-28) reworked speculative decoding, so measure before leaving it on.
 
 **vLLM on a Mac exists, but not for you.** The community `vllm-metal` plugin runs vLLM on Apple Silicon, but it is about 1.2× *slower* than llama.cpp for a single user. It exists for batching and API parity on a serving box. The common 2026 pattern: develop locally with llama.cpp or `mlx-lm`, run heavy work on a Linux GPU machine serving vLLM, and keep the OpenAI-compatible endpoint the same so clients don't change. `vllm-metal` and Docker Model Runner both expose OpenAI- *and* Anthropic-compatible APIs.
 
@@ -614,7 +624,7 @@ For the 4B and 9B class, `mlx-lm` is the measured decode-speed leader on Apple S
 - **IQ4_XS** (about 4.25 bits per weight against Q4_K_M's about 4.5) has near-identical perplexity and saves about 400 MB on a 9B, which can be the difference between fitting a useful context or not. IQ quants decode a little slower than K quants, with a smaller penalty on Metal. Keep **IQ3_XXS** (about 3.0 bits per weight, approximate) for "won't fit otherwise"; it is a real quality step down.
 - **MLX learned quantization (DWQ)** fine-tunes the quantized scales and biases against the full-precision model. A 4-bit DWQ checkpoint can reach the quality of a 6–8-bit standard quant at 4-bit size; pre-built `mlx-community` checkpoints exist. Distil from an 8-bit source, not 16-bit.
 
-> ⚠ **Quantization hurts thinking more than chat.** With Qwen3.5's reasoning on, quantized variants have been measured dropping as much as about 33% on some benchmarks, and quantization roughly doubled the answer-truncation rate, because quantized models think longer and hit the output limit. If you rely on thinking for hard reasoning, use Q5_K_M, Q6_K or 8-bit for those calls, or raise the output-token limit.
+> ⚠ **Quantization hurts thinking more than chat.** With Qwen3.5's reasoning on, quantized variants have been measured dropping as much as about 33% on some benchmarks, and quantization roughly doubled the answer-truncation rate in that report (secondary). The cause is not that quantized models reason longer: a systematic study of quantized reasoning models up to 70B found they do *not* produce longer outputs, and that 8-bit weights and activations, or 4-bit weights with 16-bit activations, are near lossless while lower bit widths carry real accuracy risk ([arXiv 2504.04823](https://arxiv.org/abs/2504.04823)). If you rely on thinking for hard reasoning, use Q5_K_M, Q6_K or 8-bit for those calls, or raise the output-token limit.
 
 **The KV cache, refined.** `q8_0` for the KV cache (the 16 GB setting in the install section) halves it at under 0.1% loss. Four-bit is asymmetric: keys tolerate it, values don't. To squeeze a long context onto 16 GB, use a Q4 key cache with a Q8 value cache rather than Q4 for both (same memory, better quality; an estimate).
 
@@ -681,7 +691,7 @@ Short tests flatter every machine, because the context is empty. `-d` (depth) fi
 llama-bench -m model.gguf -p 512 -n 128 -ngl 99 -fa on -d 0,8192,32768
 ```
 
-Flags checked against the llama-bench README on 2026-10-16.
+Flags checked against the llama-bench README on 2026-10-16 (before llama.cpp v0.8.0; re-check on your build).
 
 ### Check that it is really on the GPU
 
@@ -701,14 +711,14 @@ Copy this table into your notes and fill one row per run. Keep the runtime, quan
 
 | Machine | Runtime and version | Model and quant | Depth (tokens) | Prefill tok/s | Generation tok/s | Offload | Date |
 |---|---|---|---|---|---|---|---|
-| RTX 3090, FA on (reference) | llama.cpp scoreboard | Llama 2 7B Q4_0 | 0 | not recorded here | 161.9 (measured) | 100% GPU | see source |
+| RTX 3090, FA on (reference) | llama.cpp scoreboard | Llama 2 7B Q4_0 | 0 | not recorded here | 161.9 (measured; 177.8 on a Sep 2026 build) | 100% GPU | see source |
 | your machine | … | … | 0 | … | … | … | … |
 | your machine | … | … | 8192 | … | … | … | … |
 | your machine | … | … | 32768 | … | … | … | … |
 
 The reference row is from the llama.cpp CUDA scoreboard (github.com/ggml-org/llama.cpp/discussions/15013). Run the same model with llama-bench and you can tell at once whether your card and drivers are healthy.
 
-> ◆ **Nobody we trust has measured these on a 3090 yet.** For gpt-oss-20b, Gemma 4 31B, GLM-4.7-Flash, Qwen3-Coder-30B-A3B and Muse Glimmer 30B, no source in this guide's evidence base has a measured RTX 3090 generation speed. The figures elsewhere are ceilings derived from bandwidth divided by model size (about 51 tok/s for Gemma 4 31B and 55 for Muse Glimmer at Q4, derived), and real speeds land below them. The nearest measurements are community reports, single contributors and secondary: Qwen3.6-27B at Q3_K_XL ran 32–38 tok/s, and Qwen3.6-35B-A3B ran 136.8 tok/s at 370 W. Your llama-bench row is how this gap gets filled.
+> ◆ **Nobody we trust has measured these on a 3090 yet.** For gpt-oss-20b, Gemma 4 31B, GLM-4.7-Flash, Qwen3-Coder-30B-A3B and Muse Glimmer 30B, no source in this guide's evidence base has a measured RTX 3090 generation speed. The figures elsewhere are ceilings derived from bandwidth divided by model size (about 51 tok/s for Gemma 4 31B and 52 for Muse Glimmer at Q4, derived), and real speeds land below them. The nearest measurements are community reports, single contributors and secondary: Qwen3.6-27B at Q3_K_XL ran 32–38 tok/s, and Qwen3.6-35B-A3B ran 136.8 tok/s at 370 W. Your llama-bench row is how this gap gets filled.
 
 <!-- section id="api" toc="Use it from code" kicker="Part 1 · Run Qwen locally" -->
 ## Use it from your own code
@@ -871,10 +881,11 @@ llama-server -m Qwen3.5-9B-Q4_K_M.gguf -md Qwen3.5-0.8B-Q4_K_M.gguf \
 
 - `-md` loads the draft model, and `-ngld all` puts all of its layers on the GPU too.
 - `--spec-type draft-simple` picks classic draft-model speculation. The default is `none`, so set it explicitly.
+- `--spec-type draft-mtp` and `draft-dflash` (llama.cpp v0.8.0, 2026-10-28) use draft heads that ship with the model instead of a second model. Qwen3.8-27B ships both as small sidecar files (`mtp-` 1.7 GB and `dflash-` 1.1 GB at Q4_0 in the ggml-org repo), and `-hf` downloads them with the model. Try these first on a 27B; the 0.8B draft below is for the Qwen3.5 small models.
 - `--spec-draft-n-max` is how many tokens the draft proposes per step (default 3). Older guides use `--draft-max` and `--draft-min`; current builds have removed those flags.
 - `--port 8080` matters, because llama-server now defaults to port 9931.
 
-Flags checked against the llama-server README on 2026-10-16. Whether `draft-simple` works with Qwen3.5's hybrid architecture on your build is UNCERTAIN, so check the server log at startup.
+Flags checked against the llama-server README on 2026-11-03 (llama.cpp v0.8.0). Whether `draft-simple` works with Qwen3.5's hybrid architecture on your build is UNCERTAIN, so check the server log at startup.
 
 > ◆ **Measure the gain, don't assume it.** Speedups depend on how often the target accepts the draft's tokens, which depends on the task. Run the same prompts with and without `-md` and compare generation tok/s, as in "Benchmark your machine". If it is not faster, drop it.
 
@@ -945,7 +956,7 @@ As of mid-2026 `nomic-embed-text` is no longer the best small embedder for local
 
 **EmbeddingGemma-300m is the smallest footprint.** Ollama ≥ v0.11.10, ~622 MB on disk, under 200 MB of RAM quantized, 61.15 on MTEB-Multilingual-v2, 768 dims with Matryoshka truncation to 512, 256 or 128, 100+ languages. Two caveats. Its context is only **2048 tokens**, so cap chunks at about 1500 tokens of text. And it ships under the **Gemma licence plus Prohibited Use Policy, not Apache-2.0**; the Hugging Face card says `License: gemma`, and some blogs get this wrong. For an MIT- or open-first project, Qwen3-Embedding-0.6B's Apache-2.0 is cleaner.
 
-> 📝 **EmbeddingGemma 2, October 2026.** Shipped 2026-10-06: 740M params, multimodal, **8K context, Apache-2.0**, 768 dims with 512/256/128 Matryoshka, with Ollama and GGUF builds listed. Both caveats above are v1 facts. It has not yet been compared against Qwen3-Embedding-0.6B here, so the default stands.
+> 📝 **EmbeddingGemma 2, October 2026.** Shipped 2026-10-06: 740M params, multimodal, **8K context, Apache-2.0**, 768 dims with 512/256/128 Matryoshka, with Ollama and GGUF builds listed. Both caveats above are v1 facts. It had not been compared against Qwen3-Embedding-0.6B here at the 2026-10-15 check, so the default stands.
 
 ### Rerankers: the second pass
 
@@ -1104,7 +1115,7 @@ A single shared collection plus filtered search on `source_agent`, `trust_level`
 
 **Qdrant has a 2026 CVE that hits this exact setup.** **CVE-2026-25628** (CVSS 8.5): the unauthenticated `/logger` endpoint accepts an attacker-controlled log path, which allows arbitrary file writes and config override, with potential master-key escalation in containers, in Qdrant 1.15.5 and earlier. Mitigations:
 
-- **Upgrade.** 1.15.6 fixes this one, but run the **latest** release, v1.19.x at the time of writing.
+- **Upgrade.** 1.15.6 fixes this one, but run the **latest** release, v1.20.0 on 2026-11-03.
 - **Bind to loopback** (or to a private mesh-network interface only), as in the `docker run` above. Keep both 6333 and 6334 off every other interface.
 - **Set both an API key and a master key.**
 - **Do not expose the Web UI.** The dashboard is for you, on your machine.
@@ -1123,7 +1134,7 @@ A single shared collection plus filtered search on `source_agent`, `trust_level`
 
 `doobidoo/mcp-memory-service` is an HTTP server with a sqlite-vec or Qdrant backend. It supports multi-agent sharing through an `X-Agent-ID` header and uses local ONNX embeddings by default, for sub-5ms semantic search.
 
-> ⚠ **Pin the version.** As of October 2026, pin **≥ v11.15.0** (October 3): it refuses to bind a non-loopback address. Releases before v11.11.0 carry GHSA-7crr-2r7w-cpfm and GHSA-2hh8-qjxc-43x3. Keep `MCP_API_KEY` set and the host on 127.0.0.1, the same loopback discipline Part 1 applies to Ollama.
+> ⚠ **Pin the version.** Pin **≥ v11.15.0** (2026-10-03), which refuses to bind a non-loopback address; the latest is v12.5.0 (2026-11-03). Releases before v11.11.0 carry GHSA-7crr-2r7w-cpfm and GHSA-2hh8-qjxc-43x3. Keep `MCP_API_KEY` set and the host on 127.0.0.1, the same loopback discipline Part 1 applies to Ollama.
 
 ```bash
 git clone https://github.com/doobidoo/mcp-memory-service.git
@@ -1229,7 +1240,7 @@ Part 1's "Keep it on your machine" gave the five rules: loopback only, latest ve
 - **CVE-2024-37032, "Probllama"** (Wiz, disclosed May 5, 2024). A path-traversal bug in the model-pull and registry mechanism chained to unauthenticated remote code execution as root. Fixed in version 0.1.34, released May 7, 2024. Wiz counted "over 1,000 Ollama exposed instances hosting numerous AI models without any protection." The Docker default, running as root and bound to `0.0.0.0`, made it worse.
 - **CVE-2026-7482, "Bleeding Llama"** (Cyera, CVSS 3.1 of 9.1, CVSS 4.0 of 8.8). A heap out-of-bounds *read* in the GGUF model loader: `WriteTo()` trusted attacker-declared tensor shapes. It is an information leak, not code execution, but what leaks is exactly what matters on a shared box: environment variables, API keys, system prompts and other users' conversation data, pulled out through `/api/create` and `/api/push`. Cyera described roughly 300,000 Ollama servers exposed on the public internet as "immediately and broadly exploitable – no credentials required." Disclosed February 2, fixed February 25 in Ollama 0.17.1, published May 1, 2026.
 
-> ⚠ **The floor moved.** "Keep Ollama at 0.17.1 or later" fixed one bug and is no longer a safe-version statement. CERT/CC VU#518910, CVE-2026-5757, describes a second GGUF heap leak, this time in the quantization engine: upload a crafted model, read heap, push it out through the registry API. As of the note's 2026-04-22 revision the vendor was unreachable and "a patch is not yet available"; the current status is unverified. The advice does not depend on it: run the latest Ollama (v0.40.1 as of October 2026), keep it on `127.0.0.1`, and restrict who can create or push models.
+> ⚠ **The floor moved.** "Keep Ollama at 0.17.1 or later" fixed one bug and is no longer a safe-version statement. CERT/CC VU#518910, CVE-2026-5757, describes a second GGUF heap leak, this time in the quantization engine: upload a crafted model, read heap, push it out through the registry API. As of the note's 2026-04-22 revision the vendor was unreachable and "a patch is not yet available"; the current status is unverified. The advice does not depend on it: run the latest Ollama (v0.40.14 on 2026-11-03), keep it on `127.0.0.1`, and restrict who can create or push models.
 
 ### The GGUF-parser attack class
 
@@ -1281,11 +1292,11 @@ Both fit a 16 GB machine.
 
 | Tier | What it is | What it does well |
 |---|---|---|
-| Always-on local box | The 16 GB machine, private, zero marginal cost | Embeddings, the vector database, the memory server, retrieval preprocessing, fast `qwen3.5:4b` classification and summarisation |
+| Always-on local box | The 16 GB machine (on a single 24 GB PC, this tier and the GPU tier are the same card; see below), private, zero marginal cost | Embeddings, the vector database, the memory server, retrieval preprocessing, fast `qwen3.5:4b` classification and summarisation |
 | A GPU machine on your network | Reached over a mesh VPN such as Tailscale (encrypted WireGuard, no port forwarding) | Heavier generation: larger Qwen models, longer contexts, CUDA-class speeds |
 | A hosted frontier model | High-stakes reasoning, run remotely | Hard multi-step agentic work, complex tool orchestration, anything where correctness matters more than privacy or cost |
 
-The local tier's memory budget fits: an embedding model such as Qwen3-Embedding-0.6B at about 639 MB, a vector database such as Qdrant at a few hundred MB, and a 3B to 9B generative model at 3.4 to 6.6 GB all coexist within the roughly 9 to 12 GB usable on a 16 GB machine.
+The local tier's memory budget fits: an embedding model such as Qwen3-Embedding-0.6B at about 639 MB, a vector database such as Qdrant at a few hundred MB, and a 4B to 9B generative model at 3.3 to 7.6 GB all coexist within the roughly 9 to 12 GB usable on a 16 GB machine.
 
 <!-- widget:budget -->
 
@@ -1318,7 +1329,7 @@ The tiers above assume a 16 GB Mac plus a GPU machine elsewhere. If your one mac
 | KV cache and CUDA overhead | GPU | what is left, about 3–3.5 GB | derived |
 | Qdrant or the memory server | System RAM and CPU | a few hundred MB | as in the 16 GB budget above |
 
-That is about 20.2 GB of weights on a 24 GB card. The 3 GB or so left is the context budget. Qwen3.6-27B keeps a KV cache only in its 16 full-attention layers, about 64 KiB per token at f16, which is 2 GiB per 32K tokens. If Qwen3.8 keeps the same layout (UNCERTAIN), plan on roughly 32K tokens at f16, or about twice that with q8_0 KV. Need more room? Run the reranker only when a query needs it, or pick a smaller quant of the chat model.
+That is about 20.2 GB of weights on a 24 GB card. The 3 GB or so left is the context budget. Qwen3.8-27B keeps a KV cache only in its 16 full-attention layers (the same layout as Qwen3.6-27B), about 64 KiB per token at f16, which is 2 GiB per 32K tokens. With about 3 GB left that is roughly 48K tokens at f16, or about twice that with q8_0 KV, before runtime buffers. Need more room? Run the reranker only when a query needs it, or pick a smaller quant of the chat model.
 
 Speed is an estimate, not a measurement. The bandwidth ceiling for a 27B Q4 on a 3090 is about 49 tokens per second (derived). The nearest real number is Qwen3.6-27B at Q3_K_XL, 32–38 tokens per second, from a community repo (club-3090, secondary).
 
@@ -1333,7 +1344,7 @@ Speed is an estimate, not a measurement. The bandwidth ceiling for a 27B Q4 on a
 
 | Stage | Build | Deliverable | Threshold to advance |
 |---|---|---|---|
-| 1 (week 1) | The smallest working thing: Ollama, `qwen3.5:4b`, the six 16 GB settings from Part 1, the memory monitor open. On an NVIDIA PC: the same model, the Mac settings skipped, `nvidia-smi` open as the monitor | A local chat loop you understand mechanically | You can explain why decode is bandwidth-bound and predict tokens per second from model size (a 3090 has about 936 GB/s, derived) |
+| 1 (week 1) | The smallest working thing: Ollama, `qwen3.5:4b`, the six 16 GB settings from Part 1, the memory monitor open. On an NVIDIA PC: the same model on 8–16 GB, or Qwen3.8-27B Q4_K_M on 24 GB, the Mac settings skipped, `nvidia-smi` open as the monitor | A local chat loop you understand mechanically | You can explain why decode is bandwidth-bound and predict tokens per second from model size (a 3090 has about 936 GB/s, derived) |
 | 2 (week 2) | Embeddings, then "chat with my notes": pull `qwen3-embedding:0.6b`, write the 30-line in-memory retrieval script | A script that answers questions over your own Markdown notes with cited chunks | Retrieval returns a sensible top-k, and you can articulate cosine similarity |
 | 3 (week 3) | A real vector store: Qdrant on localhost, the collection recreated at 1024 dimensions, cosine distance and int8 quantization, your notes migrated, payload metadata added | Retrieval backed by Qdrant with `source_agent` and `trust_level` tags, inspected in the dashboard | Every stored chunk carries `source_agent` and `trust_level`, and you have checked them in the dashboard |
 | 4 (week 4) | Shared memory over MCP: `doobidoo/mcp-memory-service` (HTTP, Python 3.12) or OpenMemory, connected to any agent that speaks MCP or the OpenAI-compatible API. Connect the easiest client first (Claude Code, for example), then a second (Codex). If a client's HTTP transport misbehaves, the `mcp-remote` stdio bridge is the fallback, pinned to a version above 0.1.38 rather than `@latest` (0.1.16–0.1.38 are reported vulnerable, CVE-2026-51997 and CVE-2026-51994; secondary sources only, verify the range) | Two agents reading and writing the same memory | A fact stored by one agent is recalled by the other |
@@ -1348,7 +1359,7 @@ Two measurements rewrite the stages above. **Memory.** On a 32 GB Mac, Ollama's 
 
 ### Caveats specific to this part
 
-- **The M4 speed numbers are estimates.** No direct, attributable measurement of Qwen3.5 on a base M4 16 GB exists in public sources (re-checked October 2026). The closest hard evidence is dense-model proxies in llama.cpp discussion #4167: a base M4 running LLaMA-7B Q4_0 at 24.11 tokens per second, and an M4 Mac mini with 24 GB logging `llama3.2:3b` Q4_K_M at 45.95 and `qwen2.5-coder:7b` Q4_K_M at 22.60. Those imply an effective 92–106 GB/s, 77–88% of the 120 GB/s peak. Scaling by file size (the guide's own arithmetic) gives roughly 27–31 tokens per second for the 4B and 14–16 for the 9B; the planning ranges are about 25–35 and 13–18. Qwen3.5 is a hybrid architecture, so the dense proxy is not exact; MLX and MTP paths are unmeasured here. Benchmark your own box with `ollama ps` and real prompts.
+- **The M4 speed numbers are estimates.** No direct, attributable measurement of Qwen3.5 on a base M4 16 GB exists in public sources (re-checked 2026-10-16). The closest hard evidence is dense-model proxies in llama.cpp discussion #4167: a base M4 running LLaMA-7B Q4_0 at 24.11 tokens per second, and an M4 Mac mini with 24 GB logging `llama3.2:3b` Q4_K_M at 45.95 and `qwen2.5-coder:7b` Q4_K_M at 22.60. Those imply an effective 92–106 GB/s, 77–88% of the 120 GB/s peak. Scaling by file size (the guide's own arithmetic) gives roughly 27–31 tokens per second for the 4B and 14–16 for the 9B; the planning ranges are about 25–35 and 13–18. Qwen3.5 is a hybrid architecture, so the dense proxy is not exact; MLX and MTP paths are unmeasured here. Benchmark your own box with `ollama ps` and real prompts.
 - **Qwen3.5 tooling is new.** Some sources noted GGUF and vision (`mmproj`) edge cases in Ollama; the official library lists `qwen3.5:4b` and `:9b` as natively runnable. Verify on your installed version.
 - **KV-cache quantization isn't free on Metal.** Expect a possible 5–10% decode slowdown, and test quality on multimodal or high-GQA models before committing.
 - **The MCP ecosystem moves fast.** Client HTTP transports, Mem0's API (a v2 overhaul in 2026) and OpenMemory's transport (SSE to streamable HTTP) are all in flux. Pin versions and re-check config syntax.
@@ -1443,7 +1454,7 @@ The toy below is one weight, one example and one step at a time. It isn't Qwen, 
   Read `max_recommended_working_set_size`. On a 16 GB Apple Silicon Mac it measured **≈11.8 GiB**, about 75% of RAM.
 - **NVIDIA:** run `nvidia-smi` and read the memory column. Close the browser and anything else using the GPU first.
 
-**What fits, Qwen3.5 LoRA, October 2026:**
+**What fits, Qwen3.5 and Qwen3.8 LoRA (Unsloth figures, checked 2026-10-16):**
 
 | Machine | Realistic target | Evidence |
 |---|---|---|
@@ -1453,7 +1464,7 @@ The toy below is one weight, one example and one step at a time. It isn't Qwen, 
 | NVIDIA 24 GB | 9B, tight | Unsloth bf16 LoRA: 9B ≈ 22 GB |
 | NVIDIA 32 GB (RTX 5090) | 9B, with headroom | Unsloth bf16 LoRA: 9B ≈ 22 GB; 27B ≈ 56 GB does not fit |
 | 2× 24 GB (two 3090s) | 9B on one card; a split across both is UNCERTAIN | Unsloth multi-GPU uses `device_map = "balanced"`. How well it works on the Qwen3.5 hybrids is UNCERTAIN |
-| Qwen3.5-27B, any machine above | does not fit | Unsloth bf16 LoRA: 27B ≈ 56 GB, more than 48 GB |
+| Qwen3.5-27B or Qwen3.8-27B, any machine above | does not fit | Unsloth bf16 LoRA: 27B ≈ 56 GB, more than 48 GB (Qwen3.8-27B is the same size, 27.78B; estimated, not measured) |
 | Mac 16 GB | 0.8B / 2B; 4B on a 4-bit base, tight | ~11.8 GiB GPU budget (measured) |
 | Mac 24 GB | 4B on a 4-bit base | *Secondary:* 4B LoRA peaks of ~10.5–15 GB on 24 GB Macs |
 | Mac 32 GB+ | 9B on a 4-bit base, plausible | *Secondary:* one 9B run peaked at 13.2 GB. *Untested here* |
@@ -1484,7 +1495,7 @@ Write these down before you touch a training command. They take an hour and save
 4. **The baseline score.** Run the untrained model on the test set with your best prompt. If it already passes, you're done. Don't train.
 5. **A stop rule.** "If the adapter doesn't beat the baseline by X on the test set, I delete it."
 
-> ⚠ **Thinking mode changes the baseline.** Qwen3.5 4B and 9B *think by default*: they write a `<think>` block before answering. Only the 0.8B and 2B default to non-thinking. Decide which mode you'll use in production and measure the baseline in that mode. Turn thinking off with `enable_thinking=False` in the chat template (Hugging Face, MLX, llama.cpp) or `--think=false` / a top-level `"think": false` in Ollama.
+> ⚠ **Thinking mode changes the baseline.** Qwen3.5 4B and 9B and Qwen3.8-27B *think by default*: they write a `<think>` block before answering. Only the 0.8B and 2B default to non-thinking. Decide which mode you'll use in production and measure the baseline in that mode. Turn thinking off with `enable_thinking=False` in the chat template (Hugging Face, MLX, llama.cpp) or `--think=false` / a top-level `"think": false` in Ollama.
 
 <!-- section id="data" toc="Build the dataset" kicker="Part 3 · The part that matters most" -->
 ## Build the dataset
@@ -1511,9 +1522,9 @@ Write these down before you touch a training command. They take an hour and save
 <!-- section id="mac" toc="Path A: Mac (mlx-lm)" kicker="Part 3 · Path A · Apple Silicon" -->
 ## Path A: a Mac with `mlx-lm`
 
-`mlx-lm` is Apple's MLX library for language models. It's the training path with the fewest unknowns on a Mac in October 2026. It has supported the Qwen3.5 text model since v0.30.7 (Feb 2026). Its `LORA.md` family list still omits Qwen3/3.5; that list is stale, and the model code is there.
+`mlx-lm` is Apple's MLX library for language models. It's the training path with the fewest unknowns on a Mac. It has supported the Qwen3.5 text model since v0.30.7 (Feb 2026). Its `LORA.md` family list still omits Qwen3/3.5; that list is stale, and the model code is there.
 
-**1 — Install** (`mlx-lm` 0.32.0; needs macOS 15+ and Python ≥ 3.11):
+**1 — Install** (`mlx-lm` 0.32.2 on 2026-11-03; needs macOS 15+ and Python ≥ 3.11):
 ```bash
 uv venv --python 3.12 .venv-mlx && source .venv-mlx/bin/activate
 uv pip install "mlx-lm[train]"
@@ -1668,7 +1679,7 @@ If the output is gibberish or repeats, the chat template or end-of-sequence toke
 <!-- section id="beyond" toc="Beyond SFT" kicker="Part 3 · Next steps" -->
 ## Beyond supervised fine-tuning
 
-- **Preference tuning (DPO) and reinforcement learning (GRPO)** teach the model to prefer some answers over others, or to optimise a score you compute. Unsloth supports both on NVIDIA GPUs. GRPO with vLLM needs Linux or WSL. Neither is covered by Unsloth's Mac path as of October 2026. Get plain SFT working and evaluated first.
+- **Preference tuning (DPO) and reinforcement learning (GRPO)** teach the model to prefer some answers over others, or to optimise a score you compute. Unsloth supports both on NVIDIA GPUs. GRPO with vLLM needs Linux or WSL. Neither was covered by Unsloth's Mac path at the 2026-10-16 check. Get plain SFT working and evaluated first.
 - **Vision fine-tuning** (image + text) uses Unsloth's `FastVisionModel` on a GPU, or `mlx-vlm` on a Mac. `mlx-vlm`'s Qwen3.5 LoRA bugs were closed in September 2026. It needs much more memory than text-only training.
 - **Abliteration** removes a model's refusal behaviour by editing weights directly, without training. It's a different technique with its own costs and responsibilities. Part 4 covers it.
 
@@ -1755,17 +1766,17 @@ If any answer makes you uncomfortable, stop there.
 <!-- section id="abl-routes" toc="How people do it locally" kicker="Part 4 · Abliteration" -->
 ## How people do it locally
 
-**Route A: use a published model.** The lowest-effort path, and the one most people take. A widely pulled Qwen3.5 build is `huihui_ai/qwen3.5-abliterated` on Ollama (about 678K pulls):
+**Route A: use a published model.** The lowest-effort path, and the one most people take. A widely pulled Qwen3.5 build is `huihui_ai/qwen3.5-abliterated` on Ollama (about 717K pulls on 2026-11-03):
 ```bash
 ollama run huihui_ai/qwen3.5-abliterated:4b    # 3.3–3.4 GB
 ollama run huihui_ai/qwen3.5-abliterated:9b    # 6.6 GB
 ```
 Always write a tag. Untagged `latest` is the **27B (17 GB)** and won't load on a 16 GB machine. The repo also carries `-Claude`, `-Qwopus` and `-OmniCoder` tags, which are *different fine-tunes*, not plain abliterations. The publisher's model card says the 4B was also fine-tuned with TRL on non-thinking data, text only, with the multi-token-prediction weights removed, so expect it to differ from the base in more than refusals. These are third-party weights; everything in Part 1's "Keep it on your machine" applies, and so does the whole responsibility section above.
 
-**Route B: run Heretic yourself.** [`p-e-w/heretic`](https://github.com/p-e-w/heretic) (AGPL-3.0, `pip install -U heretic-llm`, version 1.4.0 in October 2026) automates the direction search with Optuna. It optimises refusal count *and* KL divergence from the original together, which is why its builds tend to keep more capability. Two facts matter for a local machine: **Qwen3.5's hybrid layers have been supported since v1.3.0**, and **basic Apple Silicon (MPS) support has existed since v1.1.0**, tested on a Qwen2.5-0.5B on an M4 Max with 128 GB.
+**Route B: run Heretic yourself.** [`p-e-w/heretic`](https://github.com/p-e-w/heretic) (AGPL-3.0, `pip install -U heretic-llm`; version 2.0.0, released 2026-11-01, breaks 1.x configuration files and removed the research features, so follow its migration guide if you have an old config) automates the direction search with Optuna. It optimises refusal count *and* KL divergence from the original together, which is why its builds tend to keep more capability. Two facts matter for a local machine: **Qwen3.5's hybrid layers have been supported since v1.3.0**, and **basic Apple Silicon (MPS) support has existed since v1.1.0**, tested on a Qwen2.5-0.5B on an M4 Max with 128 GB.
 - On an NVIDIA GPU, the README's reference point is 20–30 minutes for a Qwen3-4B on an RTX 3090 (24 GB).
 - On a 16 GB Mac, the **0.8B and 2B** are the realistic experiment. The **4B** in bf16 is 9.32 GB of weights, under the ~11.8 GiB GPU budget on paper but *untested* and likely tight once activations and trials are added. The **9B** (19.3 GB bf16) does not fit.
-- Version 1.4.0 pins `bitsandbytes~=0.49`, whose 4-bit path on Apple Silicon is the slow one. Don't count on quantized loading to rescue a bigger model on a Mac.
+- Version 2.0.0 pins `bitsandbytes~=0.50`, whose 4-bit path on Apple Silicon is the slow one. Don't count on quantized loading to rescue a bigger model on a Mac.
 
 Heretic writes Hugging Face safetensors. To run the result in Ollama, convert with llama.cpp's `convert_hf_to_gguf.py` (it registers `Qwen3_5ForCausalLM`), quantize with `llama-quantize`, then `ollama create` from the GGUF.
 
@@ -1924,9 +1935,9 @@ Do CS224N before CS336 if you are new to the field. CS336 assumes you can alread
 | Run | `ollama ps` shows a split such as `40%/60% CPU/GPU` | Weights plus KV cache don't fit in VRAM, so some layers run on the CPU | Lower `num_ctx`, pick a smaller quant, or close other GPU apps until the PROCESSOR column reads `100% GPU` |
 | Run | Machine swaps or freezes while a model loads | Model plus KV cache exceeds free memory | Smaller model or quant, shorter `num_ctx`, one model at a time |
 | Run | The model ignores the start of a long prompt or document, with no error | The prompt is longer than the context window and Ollama truncates it silently (issue #14259). The default context depends on VRAM: 4K under 24 GiB, 32K at 24-48 GiB | Check the CONTEXT column in `ollama ps`, then set `num_ctx` per request or `OLLAMA_CONTEXT_LENGTH` for the server |
-| Run | Out of memory only at long context | The KV cache grows with every token. Qwen3.6-27B needs 64 KiB per token at f16, about 2 GiB per 32K (derived) | Shorten the context, or quantize the cache: `OLLAMA_FLASH_ATTENTION=1` with `OLLAMA_KV_CACHE_TYPE=q8_0` in Ollama, `-ctk q8_0 -ctv q8_0` with flash attention on in llama.cpp |
-| Run | Answers start with a long `<think>` block | Thinking mode is on by default for 4B/9B | Pass `enable_thinking=False`, or train and serve consistently with thinking on |
-| Run | Thinking never ends, or loops on the same sentences | Long reasoning drifts into repetition; quantized models think longer | Set `presence_penalty` between 0 and 2 (Qwen suggests 1.5), raise the output-token limit, or turn thinking off for that task |
+| Run | Out of memory only at long context | The KV cache grows with every token. Qwen3.6-27B and Qwen3.8-27B need 64 KiB per token at f16, about 2 GiB per 32K (derived) | Shorten the context, or quantize the cache: `OLLAMA_FLASH_ATTENTION=1` with `OLLAMA_KV_CACHE_TYPE=q8_0` in Ollama, `-ctk q8_0 -ctv q8_0` with flash attention on in llama.cpp |
+| Run | Answers start with a long `<think>` block | Thinking mode is on by default for Qwen3.5 4B/9B and Qwen3.8-27B | Pass `enable_thinking=False`, or train and serve consistently with thinking on |
+| Run | Thinking never ends, or loops on the same sentences | Long reasoning drifts into repetition | Set `presence_penalty` between 0 and 2 (Qwen3.5's card suggests 1.5; Qwen3.8-27B's thinking preset is 0 and its non-thinking preset 1.5), raise the output-token limit, or turn thinking off for that task |
 | Run | A server on the network can reach my Ollama | Bound to `0.0.0.0` | Set `OLLAMA_HOST=127.0.0.1:11434` and restart |
 | Build | `llama-server` isn't on port 8080 | It now defaults to `127.0.0.1:9931` | Pass `--host 127.0.0.1 --port 8080` explicitly, and point your client at that port |
 | Build | The vector store rejects new embeddings | The collection was made for 768-dim nomic vectors, but Qwen3-Embedding-0.6B returns 1024 | Recreate the collection at size 1024 with cosine distance, then re-embed every document with the same model |
@@ -1971,7 +1982,7 @@ Plain-English meanings for the terms this guide uses. Linked terms jump to the s
 | [GGUF](#huggingface) | The single-file model format used by llama.cpp, Ollama and LM Studio. It holds quantized weights plus metadata. |
 | GQA | Grouped-query attention. Several query heads share one key/value head, which shrinks the KV cache. |
 | [GRPO](#beyond) | Group Relative Policy Optimization. A reinforcement-learning method that scores a group of sampled answers against each other. |
-| [Hybrid attention](#mac) | Mixing layer types. In Qwen3.5, three of every four layers are Gated DeltaNet (linear attention) and one is normal attention; only the normal layers keep a growing KV cache. |
+| [Hybrid attention](#mac) | Mixing layer types. In Qwen3.5, Qwen3.6 and Qwen3.8, three of every four layers are Gated DeltaNet (linear attention) and one is normal attention; only the normal layers keep a growing KV cache. |
 | KV cache | Memory that stores the keys and values of every token so far, so the model doesn't recompute them. It grows with context length. |
 | [LoRA](#lora) | Training small low-rank adapter matrices beside the frozen weights instead of changing every weight. |
 | [MCP](#shared-memory) | Model Context Protocol. A standard way for an agent to call tools and servers, such as a shared memory store. |
@@ -2002,7 +2013,7 @@ Plain-English meanings for the terms this guide uses. Linked terms jump to the s
 <!-- section id="sources" toc="Sources" kicker="Reference" -->
 ## Sources
 
-Every version, number and command in this guide traces to one of these, checked in October 2026.
+Every version, number and command in this guide traces to one of these, checked between 2026-10-15 and 2026-11-03; the section gives the date where it matters.
 
 - Running: [Ollama docs](https://docs.ollama.com/) (quickstart, GPU, import), [Ollama Qwen3.5 tags](https://ollama.com/library/qwen3.5/tags), [Hugging Face `hf` CLI](https://huggingface.co/docs/huggingface_hub/en/guides/cli), [Hub + Ollama](https://huggingface.co/docs/hub/en/ollama), [Qwen docs](https://qwen.readthedocs.io/en/latest/), [QwenLM release notes](https://github.com/QwenLM/Qwen3.8)
 - Hardware and PC runtimes: NVIDIA [RTX 3090 / 3090 Ti](https://www.nvidia.com/en-us/geforce/graphics-cards/30-series/rtx-3090-3090ti/), [RTX 4060 Ti](https://www.nvidia.com/en-us/geforce/graphics-cards/40-series/rtx-4060-4060ti/), [RTX 5090](https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5090/), [CUDA GPUs](https://developer.nvidia.com/cuda-gpus), [CUDA on WSL](https://docs.nvidia.com/cuda/wsl-user-guide/index.html); llama.cpp [CUDA scoreboard](https://github.com/ggml-org/llama.cpp/discussions/15013), [releases](https://github.com/ggml-org/llama.cpp/releases), [build](https://github.com/ggml-org/llama.cpp/blob/master/docs/build.md), [server](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md), [llama-bench](https://github.com/ggml-org/llama.cpp/blob/master/tools/llama-bench/README.md); Ollama [GPU](https://docs.ollama.com/gpu), [FAQ](https://docs.ollama.com/faq), [context length](https://docs.ollama.com/context-length), [Linux](https://docs.ollama.com/linux), [Windows](https://docs.ollama.com/windows), [Docker](https://docs.ollama.com/docker), [issue #14259](https://github.com/ollama/ollama/issues/14259); vLLM [GPU install](https://docs.vllm.ai/en/latest/getting_started/installation/gpu.html), [quantization](https://docs.vllm.ai/en/latest/features/quantization/), [parallelism](https://docs.vllm.ai/en/latest/serving/parallelism_scaling.html); [ExLlamaV3](https://github.com/turboderp-org/exllamav3), [TabbyAPI](https://github.com/theroyallab/tabbyAPI), [SGLang](https://docs.sglang.io/get_started/install.html), [KoboldCpp](https://github.com/LostRuins/koboldcpp), [text-generation-webui](https://github.com/oobabooga/text-generation-webui), [Open WebUI](https://docs.openwebui.com/getting-started/quick-start/), [LM Studio requirements](https://lmstudio.ai/docs/app/system-requirements); secondary benchmarks: [XiongjieDai](https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference), [club-3090](https://github.com/noonghunna/club-3090/blob/master/docs/HARDWARE.md), [jeanfbrito power sweep](https://jeanfbrito.github.io/posts/rtx-3090-power-limit-sweet-spot/)
@@ -2021,7 +2032,7 @@ Every version, number and command in this guide traces to one of these, checked 
 - **Nothing here was benchmarked on one fixed machine.** The memory figures come from vendor tables, one measured MLX budget on a 16 GB Mac, and labelled secondary reports. Measure your own peak.
 - **This field moves monthly.** `mlx-lm`, Unsloth, `transformers` and Ollama all changed Qwen3.5 support during 2026. Re-check versions before following a command.
 - **Untested paths are labelled.** Attention-only LoRA keys in `mlx-lm`, the fused-safetensors-to-Ollama import, and Unsloth's Mac path for Qwen3.5 are not proven here.
-- **The landscape tables are a snapshot, dated 2026-10-15.** Model families, sizes and licenses change weekly. Every row was checked against a model card or Ollama's library page that day; the watch list under the tables names what wasn't. Re-check the model card before you commit to a family.
+- **The landscape tables are a snapshot, dated 2026-10-15, with Qwen3.8, Mistral Large 4 and the watch list re-checked 2026-11-03.** Model families, sizes and licenses change weekly. Every other row was checked against a model card or Ollama's library page on 2026-10-15; the watch list under the tables names what wasn't. Re-check the model card before you commit to a family.
 - **Part 4 is deliberately conceptual.** It explains the research and names the tools. It does not provide prompt sets, harmful examples or step-by-step editing code.
 - **A tuned model is still a language model.** It can be confidently wrong. Keep validators and human review wherever mistakes cost something.
 

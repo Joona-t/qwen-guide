@@ -1,5 +1,37 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-11-03: BUG: Stale scope and settled facts across the guide; freshness check added
+
+- **Root cause:** the guide grew from a Qwen3.5 / 16 GB Mac guide into one covering Qwen3.6/3.8-27B, NVIDIA and two GPUs. New sections were added, but the framing text and the facts they settled were never revisited. Nothing failed when a "verified for 3.6 only" or "October 2026" line went stale. Joona caught the same class twice (the hero, then the opening callout).
+- **Found by:** four independent Haiku sweeps of the whole guide (about 145 findings, about 45 unique), each re-checked against primary sources on 2026-11-03.
+- **Fixed:**
+  - Opening callout: now lists every tier it covers.
+  - "Which Qwen?" framing: by memory tier.
+  - KV-cache UNCERTAIN labels: removed in 7 places. The Qwen3.8-27B config is identical to 3.6's.
+  - "Quantized models think longer": in 3 places, replaced with arXiv 2504.04823's result.
+  - Qwen3.8-27B sampling presets and the `reasoning_effort` / `preserve_thinking` switches: added.
+  - `-sm tensor` and `--spec-type draft-mtp/draft-dflash` (llama.cpp v0.8.0): added.
+  - Context budget: L1321 (32K) now agrees with the fit table (about 48K f16 on 3 GB).
+  - 24 GB Mac vs 18 GB model contradiction: fixed.
+  - Muse Glimmer ceiling: 55 → 52 tok/s.
+  - Watch list: Qwen4, Nemotron 3.5 Bolt and Mellum2.1, re-checked.
+  - Mistral Large 4: now open.
+  - Versions: Ollama v0.40.14, Qdrant v1.20.0, mcp-memory-service v12.5.0, mlx-lm 0.32.2, Heretic 2.0.0 (breaks 1.x configs).
+  - huihui pulls: 717K.
+  - Thinking defaults: verified from the Qwen3.5 chat templates.
+  - `og:url`: pointed at a 404, now `/qwen-guide/`.
+  - Wordmark aria-label: fixed.
+  - Wordmark date: Nov 2026.
+- **Enforced by:** `scripts/freshness.py`, run inside `verify.mjs`.
+  - It fails on 8 stale patterns.
+  - It fails on any "checked / as of / current on" date older than 45 days.
+  - It reports the age of every dated claim.
+- **Proven:** against the previous text (e6bb0e3) it reports FAIL (10), exit 1. On this text it passes.
+- **Measured** (`/rsi`), before → after on the same instrument: stale-pattern hits 10 → 0; dated claims tracked 16 → 17; median age 18 → 0 days.
+- **Verify:**
+  - `node scripts/verify.mjs`: PASS (321 checks).
+  - Browser at 320 px: 9 themes, no overflow; new sampling table renders.
+
 ## 2026-11-03: BUG: Hero said the guide was about Qwen3.5 only
 
 - **Root cause:** the hero line was written before the NVIDIA sections added Qwen3.8-27B for 24 GB and two-GPU machines, and nobody updated it. Joona spotted it.
