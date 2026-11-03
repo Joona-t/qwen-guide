@@ -112,7 +112,7 @@ There is no official Qwen GPTQ/AWQ for 3.8, unlike Qwen3.5-27B-GPTQ-Int4 (2026-0
 - Below 4 bits the risk rises steeply, and more so for small models and hard tasks.
 - At equal memory, more parameters at 4-bit usually beat fewer at 8-bit.
 
-**Conflict to fix in the guide:**
+**Conflict fixed in the guide on 2026-11-03 (#14):**
 - Current text ("faster" section) says quantization "roughly doubled the answer-truncation rate, because quantized models think longer". 2504.04823 found no increase in output length.
 - The guide's claim came from the 2026-10-16 research (secondary, Qwen3.5-specific). It needs downgrading to "one report", with 2504.04823 cited against it.
 

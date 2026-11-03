@@ -22,8 +22,8 @@ Find your hardware, run the first model it lists, then read the sections in the 
 | Mac, 24–32 GB | About 18–24 GB usable | `qwen3.5:9b`; on 32 GB, try Qwen3.8-27B at 4-bit (18 GB) | Ollama | [Which Qwen?](#models), [Tokens, context and the KV cache](#tokens), [Benchmark your machine](#bench) |
 | Mac, 64 GB+ | About 48 GB usable at 64 GB | Qwen3.8-27B at 4-bit, or Qwen3.6-35B-A3B (22.1 GB at Q4) | Ollama or LM Studio (MLX) | [Which Qwen?](#models), [Faster and smaller](#faster), [Benchmark your machine](#bench) |
 | NVIDIA, 8–16 GB | VRAM minus about 1 GB, minus the KV cache | `qwen3.5:4b` on 8 GB, `qwen3.5:9b` on 12–16 GB | Ollama, then llama.cpp for MoE offload | [Install Ollama](#install), [Running on an NVIDIA PC](#nvidia-pc), [Faster and smaller](#faster) |
-| RTX 3090 / 4090, 24 GB | About 23 GB, minus the KV cache | Qwen3.8-27B Q4_K_M (19 GB, ~4 GB left) | Ollama, then llama.cpp | [Running on an NVIDIA PC](#nvidia-pc), [Tokens, context and the KV cache](#tokens), [Benchmark your machine](#bench) |
-| Two RTX 3090s, 48 GB | About 46 GB (1 GB off each card), minus the KV cache, split across both cards | Qwen3.8-27B Q8_0 (28.6 GB) or Qwen3.6-35B-A3B Q8_0 (36.9 GB) | llama.cpp layer split, or vLLM on Linux | [Running on an NVIDIA PC](#nvidia-pc), [vLLM vs Ollama](#vllm), [Benchmark your machine](#bench) |
+| RTX 3090 / 4090, 24 GB | About 23 GB, minus the KV cache | Qwen3.8-27B Q4_K_M (19 GB, ~4 GB left) | Ollama, then llama.cpp | [Running on an NVIDIA PC](#nvidia-pc), [Quantization](#quant), [Tokens, context and the KV cache](#tokens), [Benchmark your machine](#bench) |
+| Two RTX 3090s, 48 GB | About 46 GB (1 GB off each card), minus the KV cache, split across both cards | Qwen3.8-27B Q8_0 (28.6 GB) or Qwen3.6-35B-A3B Q8_0 (36.9 GB) | llama.cpp layer split, or vLLM on Linux | [Running on an NVIDIA PC](#nvidia-pc), [vLLM vs Ollama](#vllm), [Bigger than 27B](#nvidia-pc), [Benchmark your machine](#bench) |
 | AMD, Intel Arc or CPU-only | Same as discrete GPU; CPU-only uses system RAM | `qwen3.5:4b`, or `qwen3.5:2b` on CPU | Ollama | [Install Ollama](#install) (this guide covers these briefly) |
 
 > ◆ **AMD, Intel Arc and CPU-only get a short treatment here.** Ollama supports AMD cards through the ROCm v7 driver on Linux, and on Windows through a ROCm v7 / HIP7 driver stack for the Radeon RX 7600 to 7900 and PRO W7500 to W7900. Other GPUs, Intel included, can use Ollama's Vulkan backend on Windows and Linux. With no usable GPU, Ollama runs on the CPU, which works but is slow. The rest of this guide is tested against Apple Silicon and NVIDIA only.
@@ -158,6 +158,31 @@ The sizes are what Ollama downloads for its default tags, which include the visi
 **Pick by task, not by ego.** Run your real prompts through the 4B first. If it does the job, you've saved memory for context and other programs. Move to the 9B when answers need more reasoning or when tool-calling has to be reliable. Tool-calling reliability drops sharply below 9B: on the BFCL benchmark the 9B scores about 66, the 4B about 50, the 2B about 44. Epoch AI rated that benchmark "Flawed" in September 2026, so treat the gap as a ranking, not a measurement.
 
 > ⚠ **The 4B and 9B think by default, and so does Qwen3.8-27B.** They write a `<think>` block before answering. That's good for hard questions and slow for everything else. Only the 0.8B and 2B default to non-thinking. That is what the models' own chat templates do (checked 2026-11-03: the 4B and 9B templates think unless `enable_thinking` is false; the 0.8B's only thinks when it is true). Unsloth's Qwen3.5 page describes all four as reasoning-off, which is a runtime default, not the template's, so check the `think` setting on your runtime. Section "Thinking mode" below shows how to switch it.
+
+### Qwen3.8-27B, the 24–48 GB pick
+
+[Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) (5 Aug 2026, Apache-2.0) is the newest 27B, and Qwen4 has no weights yet (checked 2026-11-03). It is **dense**, so every one of its 27.78 billion weights is read for every token. It takes text, images and video, and has a 262,144-token context, extendable to about 1M with YaRN. Qwen's card warns that YaRN can hurt shorter prompts, so only turn it on when you need it.
+
+It is the third 27B on the same design: Qwen3.5-27B (Feb), Qwen3.6-27B (Apr), Qwen3.8-27B (Aug). All three use 64 layers, where three of every four are linear attention and one is full attention. That is why its KV cache is small for its size (64 KiB per token, see "Tokens, context and the KV cache"). Qwen's own benchmarks put it clearly ahead of Qwen3.6-27B on agent and coding work, and a little ahead on reasoning. These are vendor numbers; no independent evaluation had been published by 2026-11-03:
+
+| Benchmark (vendor-reported) | Qwen3.8-27B | Qwen3.6-27B |
+|---|---|---|
+| SWE-bench Pro (agentic coding) | 61.7 | 53.5 |
+| Terminal Bench 2.1 | 73.0 | 63.4 |
+| IFBench (instruction following) | 79.5 | 69.1 |
+| GPQA Diamond (science reasoning) | 89.2 | 87.8 |
+| LiveCodeBench v6 | 90.3 | 83.9 |
+
+**Which build for your memory:**
+
+| You have | Build | Size |
+|---|---|---|
+| One 24 GB card, long context | `unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_XL` | 17.6 GB |
+| One 24 GB card | `ggml-org/Qwen3.8-27B-GGUF:Q4_K_M`, or `qwen3.8:27b` on Ollama | 19.0 GB / 18 GB |
+| A 32 GB Mac | `qwen3.8:27b` (Ollama) or `lmstudio-community/Qwen3.8-27B-MLX-4bit` | 18 GB |
+| Two 24 GB cards | `ggml-org/Qwen3.8-27B-GGUF:Q8_0` (llama.cpp), or AWQ or FP8 in vLLM (see "vLLM vs Ollama") | 28.6 GB |
+
+It thinks by default; see "Thinking mode" for its sampling presets and switches. Section "Quantization" explains what the Q-numbers cost.
 
 **Other Qwen models you'll see.** `Qwen2.5-Coder` (7B, 14B, 32B) is older but still the best Qwen for editor autocomplete, since it supports fill-in-the-middle. `Qwen3-VL` is a vision line. `Qwen3-Embedding-0.6B` and `Qwen3-Reranker` are for search and retrieval. `Qwen3Guard` is a safety classifier. None of these are needed to get started.
 
@@ -327,7 +352,9 @@ Two hardware facts matter later. The 3090 has no FP8 tensor cores, so FP8 models
 
 | Model | Type | 4-bit file | Left for KV cache | Context and notes | Decode |
 |---|---|---|---|---|---|
-| Qwen3.8-27B Q4_K_M | Dense | 19 GB | ~4 GB | ~64K at f16 KV or ~128K at q8_0 KV (64 KiB per token, same layout as Qwen3.6-27B) | Ceiling ~49 t/s (derived); Qwen3.6-27B at Q3_K_XL measured 32-38 (secondary) |
+| Qwen3.8-27B UD-Q4_K_XL | Dense | 17.6 GB | ~5.4 GB | ~82K at f16 KV or ~165K at q8_0 KV (derived) | Ceiling ~53 t/s (derived) |
+| Qwen3.8-27B Q4_K_M | Dense | 19 GB | ~4 GB | ~61K at f16 KV or ~122K at q8_0 KV (64 KiB per token, same layout as Qwen3.6-27B) | Ceiling ~49 t/s (derived); Qwen3.6-27B at Q3_K_XL measured 32-38 (secondary) |
+| Qwen3.8-27B UD-Q5_K_XL | Dense | 20.9 GB | ~2 GB | ~32K at f16, ~64K at q8_0 (derived) | Ceiling ~45 t/s (derived) |
 | Qwen3.6-35B-A3B | MoE, 3B active | 22.1 GB Q4; 16.8 GB UD-Q3_K_XL | ~0.5-1.5 GB at Q4 | Use Q3_K_XL for long context, or `--n-cpu-moe` | 136.8 t/s at 370 W (secondary) |
 | Qwen3-Coder-30B-A3B | MoE, 3B active | 18.6 GB Q4_K_M; 17.7 GB UD-Q4_K_XL | ~4-6 GB | Moderate (UNCERTAIN) | Not measured |
 | GLM-4.7-Flash Q4_K_M | MoE, 30B-A3B | 18.3 GB | ~4-5 GB | Compact KV (UNCERTAIN) | Not measured |
@@ -395,6 +422,32 @@ What 48 GB unlocks:
 - **Qwen3.8-27B at Q8_0** (28.6 GB), with ~18 GB left for long context.
 - **Qwen3.6-35B-A3B at Q8_0** (36.9 GB).
 - **A 70B dense at Q4_K_M.** About 16.29 t/s decode, falling to 14.34 at 8K context (XiongjieDai, May 2024, secondary).
+- **Faster decoding with the built-in draft heads.** Qwen3.8-27B ships MTP and DFlash draft files; add `--spec-type draft-mtp` (or `draft-dflash`) to the command above. How much it helps on a 3090 hasn't been measured here; compare `llama-bench` runs with and without it.
+- **Many requests at once.** For several agents or users, vLLM with `--tensor-parallel-size 2` is the better engine; see "vLLM vs Ollama".
+
+> 📝 **Not measured on a 3090 yet.** The Q8_0 and tensor-split numbers in this section are bandwidth ceilings or other people's reports. Measured `llama-bench` and KLD results from a two-3090 machine will replace them here.
+
+### Bigger than 27B: what 48 GB opens up
+
+A **dense** model reads all its weights per token, so speed falls as size grows. A **mixture-of-experts** (MoE) model only reads the experts its router picks, the "active" parameters, so a 122B model with 10B active decodes more like a 10B. You still have to *hold* the whole model, which is where two cards, or system RAM, come in.
+
+| Model | Type | Licence | Sizes (GGUF) | On two 3090s |
+|---|---|---|---|---|
+| Qwen3.6-35B-A3B | MoE, 3B active | Apache-2.0 | Q8_0 36.9 GB | Fits fully, with room for context; the fast pick |
+| Qwen3.5-122B-A10B | MoE, 10B active | Apache-2.0 | UD-IQ3_XXS 44.7 GB; UD-Q3_K_XL 57.0 GB; Q4_K_M 76.5 GB | IQ3_XXS just fits, with about 1 GB for context. Q4 needs experts in system RAM (`--n-cpu-moe`) and 64 GB or more of RAM (derived) |
+| A 70B dense (e.g. Llama 3.3 70B) | Dense | Llama licence | Q4_K_M ~42 GB (secondary) | Fits; about 16 t/s (secondary) |
+| Qwen3.8-Flash-Next | MoE, about 180B total, 10 of 512 experts active | Qwen Community License 1.0 | UD-IQ1_S 72.5 GB; UD-Q4_K_XL 111.3 GB | Never fits in VRAM; experts in RAM need roughly 96–128 GB of system RAM (derived) |
+
+Sizes are from the Unsloth GGUF repos, checked 2026-11-03. For a model that only partly fits, keep the attention layers on the GPUs and the experts in RAM:
+
+```bash
+llama-server -hf unsloth/Qwen3.5-122B-A10B-GGUF:Q4_K_M -ngl 99 --n-cpu-moe 30 -ts 1,1 -fa on -c 32768 --port 8080
+```
+
+`--n-cpu-moe 30` keeps the experts of the first 30 layers in system RAM. Lower it until VRAM is nearly full. `--moe-cache-mib` (llama.cpp v0.8.0) adds a GPU cache for the experts that stay in RAM. Expect the speed to depend on your RAM bandwidth more than on the GPUs; measure it.
+
+**About the Flash-Next licence.** It is not Apache. You may use, change, sell and host it. Products with over 100M monthly users or US$20M monthly revenue must display the model name. A business selling model access (Model-as-a-Service) or an AI coding or office assistant needs a separate licence from Qwen for commercial use; internal use is exempt. Read the [licence](https://huggingface.co/Qwen/Qwen3.8-Flash-Next/blob/main/LICENSE) before building on it.
+
 
 Three hardware notes:
 - **NVLink.** Both the 3090 and the 3090 Ti have it; the 4090 and 5090 do not. How much it helps consumer inference is UNCERTAIN. Community claims range from 10-15% to 1.6-1.8×, from the same source. Don't buy a bridge for speed alone.
@@ -479,7 +532,59 @@ A mismatched template breaks output in quiet ways. The model sees markers it was
 
 GGUF files carry the template with them, in the `tokenizer.chat_template` metadata field, which the GGUF spec describes as a Jinja template. Ollama and llama.cpp read it from there, so a GGUF from the official or a trusted uploader just works. Override it only when you know the file's template is wrong, and treat a template from an unknown source as code (see "Poisoned chat templates" in Part 2).
 
-### Quantization formats
+<!-- section id="quant" toc="Quantization" kicker="Part 1 · Run Qwen locally" -->
+## Quantization, from first principles
+
+Every number in a model is a **weight**, and Qwen3.8-27B has 27.78 billion of them. Trained models store each weight in 16 bits (bf16), so the 27B is 53.8 GB as a BF16 GGUF. That is more than two 3090s hold. Quantization stores each weight in fewer bits, with a little extra data to undo the rounding. It is the reason a 27B fits on one 24 GB card at all.
+
+### Why bits are memory and memory is speed
+
+Writing an answer reads every weight once per token. So fewer bits per weight means less memory to hold the model *and* less to read per token. On a 3090 (936 GB/s, derived), Qwen3.8-27B's decode ceiling works out like this:
+
+| Build | File | Bits per weight | Decode ceiling on a 3090 |
+|---|---|---|---|
+| BF16 | 53.8 GB | 15.5 | doesn't fit in 48 GB |
+| Q8_0 | 28.6 GB | 8.2 | ~33 t/s (two cards, layer split) |
+| Q4_K_M | 19.0 GB | 5.5 | ~49 t/s |
+| UD-Q3_K_XL | 13.1 GB | 3.8 | ~71 t/s |
+
+File sizes are from the ggml-org and Unsloth GGUF repos (checked 2026-11-03). Bits per weight is file size × 8 ÷ 27.78 billion (derived). The ceilings are bandwidth ÷ file size, an upper bound; real runs land lower (see "Running on an NVIDIA PC").
+
+**Why "4-bit" is 5.5 bits here.** Weights are rounded in blocks. In llama.cpp's Q4_K, each block of 32 weights shares a scale and a minimum, stored in 6 bits, inside super-blocks of 256. The 4-bit values plus that bookkeeping cost **4.5 bits per weight** (the format's own definition in `ggml-common.h`). Q4_K_M then keeps some of the most sensitive tensors (parts of the attention-value and feed-forward-down projections) at 5- or 6-bit (`llama-quant.cpp`), and small tensors such as the norms stay at full precision. The average lands near 5.5.
+
+### What the research says
+
+| Finding | Source | Strength |
+|---|---|---|
+| At the same total memory, a bigger model at 4-bit beats a smaller model at 8-bit. 4-bit was "almost universally optimal" across 35,000 experiments from 19M to 176B parameters. Only small block sizes and the choice of data type improved on it. | Dettmers & Zettlemoyer, [arXiv 2212.09720](https://arxiv.org/abs/2212.09720) (2022) | Strong, but older model families and zero-shot tasks only |
+| On reasoning models from 1.5B to 70B (including Qwen3-8B and QwQ-32B), 8-bit weights and activations, or 4-bit weights with 16-bit activations, were lossless. Lower bit widths carried "significant accuracy risks", most for small models and hard tasks. Quantized models did *not* write longer answers. | Liu et al., [arXiv 2504.04823](https://arxiv.org/abs/2504.04823) (2025) | Strong; no Qwen3.5-or-later hybrid models tested |
+| Models trained on more data (Llama 3, 15T tokens) lose more at 2–3 bits than older ones. | Huang et al., [arXiv 2404.14047](https://arxiv.org/abs/2404.14047) (2024) | Medium; one family |
+| Compensation-based methods (the GPTQ family) are the most robust across architectures; extremely low-bit results for very large models "should be reexamined". | Zhao et al., [arXiv 2502.13178](https://arxiv.org/abs/2502.13178) (2025) | Medium |
+
+**Where they agree:** 8-bit is lossless. A good 4-bit (Q4_K_M, AWQ, GPTQ) is close to lossless for chat and reasoning. Below 4 bits the loss climbs steeply.
+
+**What nobody has tested yet:** Unsloth's per-layer "dynamic" GGUFs against AWQ and GPTQ on the same hybrid Qwen3.8 model, and 2–3-bit 27Bs against 4-bit 9Bs on agent tasks. Measure those yourself (below).
+
+### Bigger model at lower bits, or smaller at higher bits?
+
+At **4 bits and up, take the bigger model.** On a 24 GB card that means Qwen3.8-27B at Q4_K_M (19.0 GB) over Qwen3.5-9B at Q8_0 (9.5 GB); the papers above back this. **Below 4 bits, it's a judgement call.** On a 12 GB card, a 27B at UD-Q2_K_XL (9.8 GB) against a 9B at Q8_0 (9.5 GB) is exactly the untested case, so run both on your own prompts before choosing. **When context matters more than quality,** step down one level (Q4_K_M to UD-Q4_K_XL saves 1.4 GB, about 22K more tokens at f16 for this model) rather than shrinking the model.
+
+<!-- widget:quant -->
+
+### Measure the loss yourself
+
+Perplexity tells you how surprised a model is by ordinary text. **KL divergence (KLD)** is the better quant metric: it measures how far the quantized model's next-token probabilities moved from the reference model's, token by token. llama.cpp's `llama-perplexity` does both in two steps. First save the reference model's probabilities, then compare each quant against them:
+
+```bash
+# 1. reference: the highest precision you can fit (Q8_0 on two 3090s; BF16 needs 54 GB)
+llama-perplexity -m Qwen3.8-27B-Q8_0.gguf -f wiki.test.raw --kl-divergence-base q8.kld -ngl 99
+# 2. each quant against it
+llama-perplexity -m Qwen3.8-27B-Q4_K_M.gguf -f wiki.test.raw --kl-divergence-base q8.kld --kl-divergence -ngl 99
+```
+
+It prints the mean KLD and "same top p", the share of tokens where both models picked the same most-likely token. Lower KLD and a higher top-p share are better. The README warns the saved file is large: 11 GiB for Llama 2 and 37 GiB for Llama 3 on WikiText-2, so start with a shorter text file. Use a Q8_0 reference when BF16 won't fit, and say so when you report the numbers. Then check what you care about: run 20–30 of your own prompts on two quants and compare the answers.
+
+### Which format runs where
 
 You will meet these names on model pages. Which one you can use depends on your hardware more than on taste.
 
@@ -499,6 +604,8 @@ The Apple column is derived: the GPU-only formats run on CUDA engines, which don
 1. One person, any machine: GGUF. Start at Q4_K_M, go to IQ4_XS when you need room for context, and go up to Q8_0 when you have memory to spare.
 2. On a Mac, try MLX for short prompts and keep GGUF for long contexts and tight fits (see "Faster and smaller").
 3. On an NVIDIA card, try EXL3 for the best quality per GB on 24 GB, AWQ or GPTQ when serving many requests with vLLM, and FP8 or NVFP4 only on the cards that run them natively.
+
+**The KV cache is quantized separately.** Everything above is about the weights. The cache can be stored in 8-bit as well (`q8_0`), which halves it at very little loss; see "Tokens, context and the KV cache" and "Faster and smaller".
 
 <!-- section id="thinking" toc="Thinking mode" kicker="Part 1 · Run Qwen locally" -->
 ## Thinking mode
@@ -964,10 +1071,12 @@ Local inference is private by default. Keep it that way:
 For a structured route from here, see Track 3 in the [free learning path](#learn-path). For how the model itself works, start with Tracks 0 and 2.
 
 - [Qwen documentation](https://qwen.readthedocs.io/en/latest/): the official guide, with pages for Ollama, LM Studio, llama.cpp and MLX, quantization and deployment. It still centres on the Qwen3-2507 line, but the runtime pages apply to 3.5.
-- [Qwen3.5 model cards](https://huggingface.co/Qwen/Qwen3.5-4B) on Hugging Face: architecture, benchmarks, recommended sampling, the thinking switch.
+- [Qwen3.5](https://huggingface.co/Qwen/Qwen3.5-4B) and [Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) model cards on Hugging Face: architecture, benchmarks, recommended sampling, the thinking switch.
 - [Ollama docs](https://docs.ollama.com/): quickstart, GPU requirements, importing models, the API.
 - [Hugging Face Hub docs](https://huggingface.co/docs/hub/index) and the [`hf` CLI guide](https://huggingface.co/docs/huggingface_hub/en/guides/cli).
 - [llama.cpp](https://github.com/ggml-org/llama.cpp): the engine, with its own quantization and server documentation.
+- Quantization, the papers: [GPTQ](https://arxiv.org/abs/2210.17323) and [AWQ](https://arxiv.org/abs/2306.00978) (the two 4-bit GPU methods), [The case for 4-bit precision](https://arxiv.org/abs/2212.09720), and [Quantization Hurts Reasoning?](https://arxiv.org/abs/2504.04823). llama.cpp's [perplexity and KLD README](https://github.com/ggml-org/llama.cpp/blob/master/tools/perplexity/README.md) shows how to measure a quant.
+- [vLLM docs](https://docs.vllm.ai/) and the [PagedAttention paper](https://arxiv.org/abs/2309.06180), for serving many requests at once.
 - [mlx-lm](https://github.com/ml-explore/mlx-lm): Apple's package for running and training on MLX.
 - [The Hugging Face LLM course](https://huggingface.co/learn/llm-course/chapter1/1): free, from tokenizers to fine-tuning, if you want the foundations.
 - [Andrej Karpathy's Zero to Hero](https://karpathy.ai/zero-to-hero.html): build a small language model from scratch in Python. The best way to understand what the weights are.
@@ -1387,7 +1496,7 @@ The tiers above assume a 16 GB Mac plus a GPU machine elsewhere. If your one mac
 | KV cache and CUDA overhead | GPU | what is left, about 3–3.5 GB | derived |
 | Qdrant or the memory server | System RAM and CPU | a few hundred MB | as in the 16 GB budget above |
 
-That is about 20.2 GB of weights on a 24 GB card. The 3 GB or so left is the context budget. Qwen3.8-27B keeps a KV cache only in its 16 full-attention layers (the same layout as Qwen3.6-27B), about 64 KiB per token at f16, which is 2 GiB per 32K tokens. With about 3 GB left that is roughly 48K tokens at f16, or about twice that with q8_0 KV, before runtime buffers. Need more room? Run the reranker only when a query needs it, or pick a smaller quant of the chat model.
+That is about 20.2 GB of weights on a 24 GB card. The 3 GB or so left is the context budget. Qwen3.8-27B keeps a KV cache only in its 16 full-attention layers (the same layout as Qwen3.6-27B), about 64 KiB per token at f16, which is 2 GiB per 32K tokens. With about 3 GB left that is roughly 46K tokens at f16, or about twice that with q8_0 KV, before runtime buffers. Need more room? Run the reranker only when a query needs it, or pick a smaller quant of the chat model.
 
 Speed is an estimate, not a measurement. The bandwidth ceiling for a 27B Q4 on a 3090 is about 49 tokens per second (derived). The nearest real number is Qwen3.6-27B at Q3_K_XL, 32–38 tokens per second, from a community repo (club-3090, secondary).
 

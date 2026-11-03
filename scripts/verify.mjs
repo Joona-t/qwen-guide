@@ -62,6 +62,22 @@ near(M.fitCalc({ kind: 'nv', mem: 48, cards: 2, model: 19, kvKiB: null, ctx: 819
 ok(M.fitCalc({ kind: 'nv', mem: 24, cards: 1, model: 22.1, kvKiB: 20, ctx: 8192, kvType: 'f16' }).verdict === 'tight', '35B-A3B Q4 on 3090 is tight');
 near(M.decodeCeiling(936, 19), 936 / 19); ok(Math.abs(M.decodeCeiling(936, 19) - 49.3) < 0.05, 'decode 3090 19 GB ≈ 49.3');
 for (const a of [-3, 0, 3.9, 4, 5, 5.1, 10, 1e6]) ok(M.wiredProgram(a) === M.wiredNetwork(a), `handwired disagrees at a=${a}`);
+// quant widget (research.md §B, §C, §E): bpw, ceiling and context against hand-computed values
+{ const m = M.QMODELS.q27, q4 = m.quants.find(q => q[0] === 'Q4_K_M')[1];
+  ok(q4 === 19.0 && m.kvKiB === 64 && m.params === 27.78, 'Qwen3.8-27B constants');
+  const r = M.quantCalc({ params: m.params, active: m.active, kvKiB: m.kvKiB, size: q4, kind: 'nv', mem: 24, bw: 936, cards: 1, kvType: 'f16' });
+  near(r.bpw, 19 * 8 / 27.78); ok(Math.abs(r.bpw - 5.47) < 0.01, 'Q4_K_M ≈ 5.47 bpw');
+  near(r.ceiling, 936 / 19); near(r.usable, 23); ok(r.ctx === Math.floor(4e9 / 65536), '3090 Q4_K_M f16 context = 4 GB / 64 KiB');
+  const h = M.quantCalc({ params: m.params, active: m.active, kvKiB: m.kvKiB, size: q4, kind: 'nv', mem: 24, bw: 936, cards: 1, kvType: 'q8_0' });
+  ok(h.ctx === Math.floor(4e9 / 32768), 'q8_0 doubles the context');
+  const bf = M.quantCalc({ params: m.params, active: m.active, kvKiB: m.kvKiB, size: 53.8, kind: 'nv', mem: 48, bw: 936, cards: 2, kvType: 'f16' });
+  ok(!bf.fits && bf.ctx === 0, 'BF16 27B does not fit on two 3090s');
+  const q8 = M.quantCalc({ params: m.params, active: m.active, kvKiB: m.kvKiB, size: 28.6, kind: 'nv', mem: 48, bw: 936, cards: 2, kvType: 'f16' });
+  ok(q8.ctx === 262144, 'Q8_0 on two 3090s is capped at the native window'); ok(Math.round(q8.ceiling) === 33, 'Q8_0 ceiling ≈ 33'); }
+{ const m = M.QMODELS.q122, r = M.quantCalc({ params: m.params, active: m.active, kvKiB: m.kvKiB, size: 44.7, kind: 'nv', mem: 48, bw: 936, cards: 2, kvType: 'f16' });
+  ok(r.fits && Math.abs(r.left - 1.3) < 1e-9, '122B IQ3_XXS leaves 1.3 GB on two 3090s'); near(r.ceiling, 936 / (44.7 * 10 / 125.09));
+  ok(!M.quantCalc({ params: m.params, active: m.active, kvKiB: m.kvKiB, size: 76.5, kind: 'nv', mem: 48, bw: 936, cards: 2, kvType: 'f16' }).fits, '122B Q4_K_M needs RAM offload'); }
+for (const [k, m] of Object.entries(M.QMODELS)) { ok(m.quants.some(q => q[0] === 'Q4_K_M'), `${k} has a Q4_K_M default`); for (let i = 1; i < m.quants.length; i++) ok(m.quants[i][1] > m.quants[i-1][1], `${k} quants sorted by size`); }
 
 // 3. page integrity
 const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
@@ -70,7 +86,7 @@ for (const [, id] of html.matchAll(/href="#([^"]+)"/g)) ok(ids.includes(id), `mi
 // fit: unknown KV with < 5 GB headroom is 'tight' (Gemma 4 31B on a 3090), >= 5 GB is 'fits'
 ok(M.fitCalc({kind:'gpu', mem:24, cards:1, model:18.3, kvKiB:null, ctx:16384, kvType:'q8_0'}).verdict === 'tight', 'fit: unknown-KV tight');
 ok(M.fitCalc({kind:'gpu', mem:24, cards:1, model:14, kvKiB:null, ctx:16384, kvType:'q8_0'}).verdict === 'fits', 'fit: unknown-KV fits');
-const WIDGET_IDS = { decode: 'calc-decode', budget: 'calc-budget', reliability: 'calc-rel', gradient: 'calc-step', handwired: 'calc-wired', lora: 'calc-lora', memory: 'calc-mem', quiz: 'quizForm', fit: 'calc-fit' };
+const WIDGET_IDS = { decode: 'calc-decode', budget: 'calc-budget', reliability: 'calc-rel', gradient: 'calc-step', handwired: 'calc-wired', lora: 'calc-lora', memory: 'calc-mem', quiz: 'quizForm', fit: 'calc-fit', quant: 'calc-quant' };
 for (const [n, id] of Object.entries(WIDGET_IDS)) ok(!md.includes(`widget:${n}`) || html.includes(`id="${id}"`), `widget ${n} not rendered`);
 ok(!/<(?:script|img|iframe)\b[^>]*\bsrc\s*=\s*["']https?:/i.test(html), 'external script/img');
 ok(!/<link\b[^>]*\bhref\s*=\s*["']https?:/i.test(html), 'external stylesheet');

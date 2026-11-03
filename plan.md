@@ -1,6 +1,6 @@
 # Plan: Qwen3.8-27B on two RTX 3090s, quantization taught properly, larger models (2026-11-03)
 
-> **Status:** PLAN, awaiting Joona's annotations and "implement it all". Partly overtaken on 2026-11-03: the consistency sweep (#14) did W8 and part of W2/W5, and the vLLM section did the text of W6(c). The W6(c) recipe still needs its run on the rig (§3.4). Evidence: `research.md` §A-G (2026-11-03). The 2026-10-16 plan follows below for history.
+> **Status:** IMPLEMENTED 2026-11-03 (ITER below, qwen-guide#16) after Joona's "implement it all", with the §5 recommended defaults: rig-free parts shipped, Flash-Next as one licence paragraph, quantization as its own section, Q4_K_M stays the headline with UD-Q4_K_XL as the context option. W1-W5, W7-W10 shipped, plus W6 text and the vLLM section (#15). Still open: §3 measurements on the 2×3090 rig (not built yet; the owner's PC has an RTX 5060 Ti 8 GB), which replace the derived ceilings.
 
 ## 1. Goal
 
