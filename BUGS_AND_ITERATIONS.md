@@ -1,5 +1,21 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-11-03: ITER: vLLM section, and why it beats Ollama for serving
+
+- **What:** Joona asked for vLLM and why it is better than Ollama. The new Part 1 section "vLLM vs Ollama" covers:
+  - PagedAttention (arXiv 2309.06180, 2-4×), continuous batching, prefix caching (on by default in v0.32.0) and tensor parallelism. Ollama spreads layers instead.
+  - Red Hat's A100 benchmark: 793 vs 41 TPS, labelled as a vendor source.
+  - The honest limit: with one user the gap mostly disappears, because decode is bandwidth-bound.
+  - A which-to-use table.
+  - What vLLM costs you: Linux/WSL2 only, compute capability ≥ 7.5, 92% VRAM by default.
+  - A Qwen3.8-27B two-3090 recipe (AWQ-INT4 or FP8 as W8A16 via Marlin, TP=2, reasoning and tool parsers, MTP), labelled untested on a 3090.
+- **Also:** the PC runtimes table now marks vLLM's GGUF support as an experimental plugin, and the two-3090 path row links the new section.
+- **Evidence:** `research.md` §H. Every flag and default was checked against the v0.32.0 source or docs, and the recipe against the vLLM Qwen3.8 recipe.
+- **Verify:**
+  - `node scripts/verify.mjs`: PASS (325 checks).
+  - `freshness.py`: PASS.
+  - Browser at 320 px: section, table and code block render; 4 themes, no overflow.
+
 ## 2026-11-03: BUG: Stale scope and settled facts across the guide; freshness check added
 
 - **Root cause:** the guide grew from a Qwen3.5 / 16 GB Mac guide into one covering Qwen3.6/3.8-27B, NVIDIA and two GPUs. New sections were added, but the framing text and the facts they settled were never revisited. Nothing failed when a "verified for 3.6 only" or "October 2026" line went stale. Joona caught the same class twice (the hero, then the opening callout).
