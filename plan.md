@@ -1,3 +1,55 @@
+# Plan: Qwen3.8-27B on two RTX 3090s, quantization taught properly, larger models (2026-11-03)
+
+> **Status:** PLAN, awaiting Joona's annotations and "implement it all". Not implemented. Evidence: `research.md` §A-G (2026-11-03). The 2026-10-16 plan follows below for history.
+
+## 1. Goal
+
+Joona now runs two RTX 3090s (48 GB VRAM). The guide should make **Qwen3.8-27B** (5 Aug 2026, the newest 27B; no Qwen4 weights exist) the headline model for 24-48 GB readers. **Qwen3.5** stays the pick for 8-16 GB machines. Readers should come away understanding quantization: what the formats are, what the bits cost, and how to measure the loss. A new section covers models larger than 27B that 48 GB opens up. Acceptance criteria are in §4.
+
+**Frontier reference:** Unsloth's Qwen3.8 docs page and the SGLang Qwen3.8-27B cookbook are the best current "run this model" pages. Neither covers Ampere or two consumer cards, and neither teaches quantization from first principles with measured KLD. Beating them means: a 2×3090 recipe that we have run ourselves, with measured t/s and KLD numbers from our own machine.
+
+## 2. Changes, by section
+
+| # | Section | Change | Evidence |
+|---|---|---|---|
+| W1 | Hero + "Pick your path" | The 24 GB and 48 GB paths name Qwen3.8-27B. The 8-16 GB path keeps Qwen3.5-4B/9B. Add "checked 3 Nov 2026". | §A |
+| W2 | Which Qwen? | A "Qwen3.8-27B" subsection: what it is (dense, 27.78B, vision, Apache-2.0, 262K native), the 3.5 → 3.6 → 3.8 lineage with vendor benchmark deltas (labelled vendor-reported), and thinking defaults, `reasoning_effort`, `preserve_thinking` and both official sampling presets. The 3.5 table stays as is. Remove "on a 24 GB machine prefer 3.8" from the 3.5 row and move it into the new subsection. | §A |
+| W3 | **New section "Quantization, from first principles"** (Part 1, after "Tokens, context and the KV cache") | What a weight is. Why bits = memory = speed (bandwidth ceiling). bpw, with the worked example 19.0 GB → 5.5 bpw. Block quantization (k-quants, the 2212.09720 block-size finding). imatrix and "dynamic" per-layer quants. GPTQ/AWQ (W4A16) against GGUF against EXL3 against FP8/NVFP4, and which GPU runs which. The research table (where the papers agree, where they conflict, what is untested). A **"bigger model at lower bits, or smaller model at higher bits?"** rule. How to measure the loss yourself: `llama-perplexity --kl-divergence` against a BF16 or Q8_0 baseline. KV-cache quantization moves here. | §F |
+| W4 | Quant widget (new, `template/widgets/quant.html`) | Pick model (3.5-9B, 3.8-27B, 3.5-122B-A10B) and quant. Shows file size from the real HF table, bpw, the decode ceiling on 1 or 2 3090s, and the context that fits in 24/48 GB using the 64 KiB/token KV formula. The math is exposed on `window` and tested in `verify.mjs`, like FineTuneMath. | §B, §C, §D |
+| W5 | Running on an NVIDIA PC | Rewrite the one-3090 table around Qwen3.8-27B quants (UD-Q4_K_XL 17.6, Q4_K_M 19.0, UD-Q5_K_XL 20.9, UD-Q6_K 22.0) with context-fit numbers. The KV note becomes "proven for 3.8" and drops UNCERTAIN. | §B, §C |
+| W6 | **Two RTX 3090s, rewritten as a full path** | Three recipes, each run on Joona's rig before publishing. (a) llama.cpp layer split, Q8_0, 128K context. (b) llama.cpp `-sm tensor` (experimental), with a stated result even if it fails on qwen35. (c) vLLM TP=2 with AWQ-INT4. Speculative decoding with the MTP/DFlash sidecars (`--spec-type draft-mtp`). Measured tg/pp at 0, 32K and 128K context. Power cap results. | §D, §G |
+| W7 | **New section "Bigger than 27B"** | Qwen3.6-35B-A3B Q8. Qwen3.5-122B-A10B at IQ3_XXS fully on GPU against Q4 with `--n-cpu-moe` and `--moe-cache-mib`. A 70B dense for comparison. Qwen3.8-Flash-Next (~180B) as "needs ≥96-128 GB RAM", with its **Qwen Community License** conditions spelled out. Dense against MoE, and why active parameters set speed. | §E |
+| W8 | Faster and smaller | Fix the conflict: the "quantized models think longer / truncation doubles" claim is downgraded to one report and set against 2504.04823. Point readers to W3 for the theory. | §F |
+| W9 | Fine-tune Part 3 | Add a 2×3090 row for a 27B LoRA, using Unsloth's existing figures (bf16 LoRA 27B 56 GB, so it does not fit in 48 GB; QLoRA ~22 GB fits on one card, though Unsloth does not recommend QLoRA on the 3.5 architecture). Keep it short; no new training recipe. | old research §5 |
+| W10 | Learn more | Add the quantization papers (GPTQ, AWQ, 2212.09720, 2504.04823) and llama.cpp's quantize/perplexity docs. | §F |
+
+## 3. Measurement plan on the 2×3090 rig (before any number ships)
+
+All runs use `llama-bench` / `llama-perplexity` from llama.cpp ≥ v0.8.0 and vLLM latest stable, with one variable at a time, and are logged to `bench/` in the repo:
+1. tg128 / pp512 for Qwen3.8-27B at UD-Q4_K_XL, Q6_K and Q8_0, with `-sm layer` and `-sm tensor`, at context depth 0, 32K and 128K.
+2. MTP and DFlash speculative decoding, on and off (`--spec-type draft-mtp` / `draft-dflash`), on 20 fixed prompts: tok/s and acceptance rate.
+3. KLD and perplexity of each quant against Q8_0 (BF16 is 53.8 GB, which won't fit on 48 GB; say so) on wikitext-2 plus a code sample.
+4. vLLM TP=2 AWQ-INT4: single-user tok/s and 4-way concurrent throughput.
+5. Qwen3.5-122B-A10B IQ3_XXS fully on GPU against Q4_K_M with `--n-cpu-moe` (depends on the rig's RAM).
+6. Power cap at 280 W against stock on recipe 1.
+
+## 4. Acceptance criteria
+
+- `node scripts/verify.mjs` passes, with new tests for the quant widget math: file-size lookup, bpw, ceiling, and KV fit against hand-computed values.
+- Every number in the new text traces to `research.md` §A-G or `bench/`. Secondary sources are labelled. No UNCERTAIN item is stated as fact.
+- At least one 2×3090 recipe has been run end to end on the rig, with a measured tok/s.
+- Browser check: 320 px, all 9 themes, no overflow. The new widget works by keyboard.
+- The 3.5 content for 8-16 GB machines is still there and unchanged except W8.
+
+## 5. Decisions for Joona
+
+1. **Where are the 3090s?** The current PC reports one RTX 5060 Ti 8 GB and 31 GB RAM today. Is the 2×3090 build a new machine, or an upgrade to the current PC, and how much system RAM will it have? This sets W6/W7's measured claims. 64 GB+ unlocks the 122B MoE at Q4. **Recommended:** publish W1-W5 and W8-W10 now (they need no rig); W6/W7 ship after §3 runs.
+2. **Flash-Next in the guide?** It is not Apache (Qwen Community License 1.0) and needs ≥96 GB RAM. **Recommended:** one paragraph with the licence summary, no recipe.
+3. **Quantization as its own section, or folded into "Faster and smaller"?** **Recommended:** its own section (W3). It's the teaching core you asked for; "Faster and smaller" keeps the engines.
+4. **Lead model for 24 GB single-card readers:** Qwen3.8-27B at UD-Q4_K_XL (17.6 GB, more room for context), or Q4_K_M (19.0 GB)? **Recommended:** UD-Q4_K_XL, pending the KLD run in §3.3.
+
+---
+
 # Plan: major improvements to the Qwen guide
 
 > **Status:** IMPLEMENTED 2026-10-16 (ITER-008), after Joona said "implement it all" with the recommended defaults for the four decisions in §5. Evidence for every item is in `research.md`.

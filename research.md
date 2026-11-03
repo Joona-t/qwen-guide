@@ -1,3 +1,138 @@
+# Research: Qwen3.8-27B, quantization and dual RTX 3090 (checked 2026-11-03)
+
+> **Status:** evidence base for the 2026-11-03 plan (top of `plan.md`). Compiled solo on 2026-11-03 from primary sources: Qwen's Hugging Face org (API listing, `config.json`, model card, LICENSE), Hugging Face file trees for the GGUF repos, the llama.cpp server README at master (release v0.8.0, 2026-10-28), the SGLang Qwen3.8-27B cookbook, Ollama's library page and arXiv abstracts. Secondary sources are labelled. The 2026-10-16 evidence base follows below, unchanged.
+
+## A. What "the latest 27B" is
+
+- **Qwen3.8-27B is the newest 27B.** Qwen's HF org, sorted by creation date, lists `Qwen/Qwen3.8-27B` (2026-08-05) and `Qwen/Qwen3.8-27B-FP8` (2026-08-13). Nothing newer has 27B in the name. The 27B line so far: Qwen3.5-27B (2026-02-24), Qwen3.6-27B (2026-04-21), Qwen3.8-27B (2026-08-05).
+- **Qwen4 is not out.** It was announced at Apsara (2026-09-22) as "in training" (secondary: yottalabs, orcarouter, willitrunai). Claims of an early-November Qwen4-27B launch are secondary and unconfirmed. No Qwen4 weights are on Qwen's HF org (API listing, 2026-11-03). The guide should say "newest as of 3 Nov 2026" and not predict Qwen4.
+- **Card facts** (`Qwen/Qwen3.8-27B` README and config):
+  - 27.78B parameters (safetensors total 27,781,427,952), dense. Apache-2.0. Native vision-language (images and video). Architecture `Qwen3_5ForConditionalGeneration`, built "on the architectural foundation of Qwen3.5".
+  - 64 layers: 48 linear-attention and 16 full-attention (`full_attention_interval` 4). 24 query heads, **4 KV heads**, head dim 256, hidden 5120. This is identical to Qwen3.6-27B's config.
+  - Context is 262,144 tokens natively. It extends to about 1M with YaRN; the card says static YaRN "potentially impact[s] performance on shorter texts" and should only be enabled when needed.
+  - Thinking is on by default and can be disabled per request (`chat_template_kwargs: {enable_thinking: false}`). It also has `reasoning_effort`. `preserve_thinking` is on by default: it keeps reasoning from earlier turns.
+  - Sampling, thinking mode: temperature 1.0, top_p 0.95, top_k 20, min_p 0, presence_penalty 0. Non-thinking mode: temperature 0.7, top_p 0.80, top_k 20, presence_penalty 1.5.
+  - It was trained with multi-token prediction (MTP heads).
+- **Vendor benchmarks** (Qwen's own table, card; label them vendor-reported):
+
+  | Benchmark | 3.8-27B | 3.6-27B |
+  |---|---|---|
+  | SWE-bench Pro | 61.7 | 53.5 |
+  | Terminal Bench 2.1 | 73.0 | 63.4 |
+  | IFBench | 79.5 | 69.1 |
+  | GPQA Diamond | 89.2 | 87.8 |
+  | LiveCodeBench v6 | 90.3 | 83.9 |
+
+  No independent evaluation was found yet. Epoch-style independent numbers are a gap.
+
+## B. KV cache: the guide's open UNCERTAIN is now settled
+
+The guide currently says the 64 KiB/token figure is proven only for 3.6 (research §5, "if its layout matches Qwen3.6 (UNCERTAIN)"). The 3.8 config matches 3.6 exactly. That gives 16 full-attention layers × 4 KV heads × 256 × 2 (K, V) × 2 bytes = **64 KiB per token at f16**, so 2 GiB per 32K and 16 GiB at the full 262K. At q8_0 KV it is half: 8 GiB at 262K. The 48 linear-attention layers keep a fixed-size state, not a per-token cache (state size not derived here: UNCERTAIN, small).
+
+## C. File sizes for Qwen3.8-27B (HF file trees, 2026-11-03, decimal GB)
+
+| Build | Size | Source |
+|---|---|---|
+| UD-IQ2_XXS | 7.3 | unsloth |
+| UD-Q2_K_XL | 9.8 | unsloth |
+| UD-IQ3_XXS | 10.9 | unsloth |
+| UD-Q3_K_XL | 13.1 | unsloth |
+| UD-IQ4_XS | 14.3 | unsloth |
+| UD-Q4_K_M | 16.5 | unsloth |
+| UD-Q4_K_XL | 17.6 | unsloth |
+| Q4_K_M | 19.0 | ggml-org |
+| UD-Q5_K_XL | 20.9 | unsloth |
+| UD-Q6_K | 22.0 | unsloth |
+| UD-Q6_K_XL | 25.3 | unsloth |
+| Q8_0 | 28.6 (ggml-org) / 29.0 (unsloth) | both |
+| BF16 | 53.8 | ggml-org |
+
+The vision projector (mmproj) adds 0.6-0.9 GB. Draft heads ship as sidecars. ggml-org has `mtp-` builds at 1.7 GB (Q4_0) and 3.2 GB (Q8_0), and `dflash-` builds at 1.1 GB (Q4_0) and 2.1 GB (Q8_0).
+
+Ollama has `qwen3.8:27b` (18 GB default), plus `-q8_0`, `-bf16`, `-mtp-q8_0`, `-nvfp4` and `-mlx` tags.
+
+Other formats on HF:
+- AWQ-INT4: `cyankiwi/Qwen3.8-27B-AWQ-INT4`, 1.08M downloads.
+- GPTQ-W4A16: several community builds.
+- EXL3: `turboderp/Qwen3.8-27B-exl3`, by ExLlama's author.
+- NVFP4: `unsloth/Qwen3.8-27B-NVFP4` and others. This is Blackwell-only.
+- MLX: 4, 5, 6 and 8-bit, from lmstudio-community.
+
+There is no official Qwen GPTQ/AWQ for 3.8, unlike Qwen3.5-27B-GPTQ-Int4 (2026-03-03).
+
+## D. Serving on two RTX 3090s
+
+- **llama.cpp, master README (v0.8.0, 2026-10-28):**
+  - `-sm` takes `none`, `layer` (default, pipelined), `row`, and **`tensor`**, which "split[s] weights and KV across GPUs (parallelized, EXPERIMENTAL)".
+  - `-sm tensor` has PRs for DeepSeek 4 (#26490, 2026-08-24) and qwen4exp (#28569, 2026-10-01). Whether it covers the `qwen35` architecture used by the 27B is **UNCERTAIN**. It needs a test run on the rig.
+  - `--spec-type` now includes `draft-mtp`, `draft-dflash`, `draft-dspark` and `draft-eagle3`. `-hf` pulls these "sidecars" with the model.
+  - New flag: `--moe-cache-mib`, a GPU cache for CPU-resident experts, split across GPUs like `-ts`.
+- **SGLang cookbook (Qwen3.8-27B):**
+  - Its tested cards are H200, RTX PRO 6000, RTX 5090 and DGX Spark. There is **no Ampere or 3090 recipe and no 2-GPU recipe**. The FP8 weights are ~28.5 GB.
+  - Speculative options: EAGLE/MTP (`--speculative-algorithm EAGLE --speculative-num-steps 3 --speculative-eagle-topk 1 --speculative-num-draft-tokens 4`), DFLASH with `incoai/Qwen3.8-27B-DFlash2`, and DSPARK.
+  - Measured on a 5090: NVFP4+EAGLE ~145-153 tok/s/user. Those speeds don't transfer to a 3090, which has no FP4 or FP8 tensor cores (§2 of the old research).
+- **On 2×3090 with vLLM**, the likely path is AWQ/GPTQ-INT4 (Marlin W4A16 kernels run on Ampere), or FP8 as weight-only, with `--tensor-parallel-size 2`. That this works for the 3.8 hybrid-attention model on Ampere is **UNCERTAIN until run**.
+- **Existing secondary data, kept:**
+  - 27B Q6 on 2×3090: ~22.8 t/s near empty context, 4.0 at 95K (sanj.dev).
+  - 70B Q4_K_M on 2×3090: 16.29 t/s (XiongjieDai).
+  - Note: club-3090's 32-38 t/s figure is for 3.6-27B Q3_K_XL on one card.
+- **Derived decode ceilings** (936 GB/s per card; layer split reads each card's half in turn, so the ceiling is the same as one card with the whole model):
+  - Q4_K_M (19.0 GB): ~49 t/s.
+  - Q6_K (22 GB): ~43 t/s.
+  - Q8_0 (28.6 GB): ~33 t/s.
+  - Tensor split could approach 2× those numbers in theory (both cards read in parallel). It is UNCERTAIN in practice because of PCIe all-reduce.
+
+## E. Larger models for 48 GB (HF file trees, 2026-11-03)
+
+| Model | Type | Licence | Sizes | 48 GB VRAM verdict |
+|---|---|---|---|---|
+| Qwen3.6-35B-A3B | MoE, 3B active | Apache-2.0 | Q8_0 36.9 GB | Fits with room (already in guide) |
+| Qwen3.5-122B-A10B | MoE, 10B active | Apache-2.0 | UD-IQ3_XXS 44.7, UD-Q3_K_XL 57.0, Q4_K_M 76.5 GB | IQ3_XXS fits with ~2 GB context; Q4 needs `--n-cpu-moe` plus ≥64 GB RAM (derived) |
+| Qwen3.8-Flash-Next | MoE, 512 experts, 10 active, ~180B total (`Qwen4ExpForConditionalGeneration`) | **Qwen Community License 1.0**, not Apache | UD-IQ1_S 72.5, UD-Q4_K_XL 111.3, Q8_0 188.2 GB | Never fits in VRAM; experts in RAM need ≥96-128 GB system RAM (derived) |
+| 70B dense (e.g. Llama 3.3 70B) | Dense | Llama licence | Q4_K_M ~42 GB (secondary, not re-fetched) | Fits, ~16 t/s (XiongjieDai) |
+
+- **Flash-Next licence:** free to use, modify, sell, host and fine-tune. Two conditions apply:
+  - (1) Products with over 100M MAU or US$20M monthly revenue must show the model name.
+  - (2) Model-as-a-Service and "AI Work Assistant" (coding or office) businesses need a separate licence for commercial use. Internal use is exempt.
+  - Readers should be told this. It conflicts with nothing in LoveSpark's own use, but it is not Apache.
+
+## F. Quantization: what the papers say
+
+| Paper | Finding | Strength |
+|---|---|---|
+| Dettmers & Zettlemoyer, "The case for 4-bit precision" ([arXiv 2212.09720](https://arxiv.org/abs/2212.09720), Dec 2022) | Over 35,000 experiments, 19M-176B parameters: "4-bit precision is almost universally optimal for total model bits and zero-shot accuracy". A bigger model at 4-bit beats a smaller one at 8-bit for the same memory. Small block sizes and the data type are the only things that improved the trade-off. | Strong, but old model families (BLOOM, OPT, Pythia), zero-shot only |
+| Liu et al., "Quantization Hurts Reasoning?" ([arXiv 2504.04823](https://arxiv.org/abs/2504.04823), Apr 2025) | On reasoning models from 1.5B to 70B (R1-distills, QwQ-32B, Qwen3-8B), W8A8 and W4A16 are lossless; lower bit widths carry "significant accuracy risks". Model size, origin and task difficulty matter. **"Quantized models do not exhibit increased output lengths."** | Strong, but no Qwen3.5+ hybrid models |
+| Huang et al., LLaMA3 quantization study ([arXiv 2404.14047](https://arxiv.org/abs/2404.14047), Apr 2024) | Heavily-trained models (15T tokens) degrade more at ultra-low bits; the gap at 2-3 bits is "non-negligible". | Medium; one family |
+| Zhao et al., PTQ benchmark ([arXiv 2502.13178](https://arxiv.org/abs/2502.13178), Feb 2025) | 7B-70B: compensation-based methods (GPTQ family) are the most robust across architectures; "extremely low-bit PTQ for ultra large models should be reexamined". | Medium |
+| Method papers to cite when explaining | GPTQ ([2210.17323](https://arxiv.org/abs/2210.17323)), AWQ ([2306.00978](https://arxiv.org/abs/2306.00978)), SpQR ([2306.03078](https://arxiv.org/abs/2306.03078)), QuIP# ([2402.04396](https://arxiv.org/abs/2402.04396)) | Primary |
+
+**Where the papers agree:**
+- Weight-only 4-bit (W4A16) with a good method is close to lossless for chat and for reasoning.
+- 8-bit is lossless.
+- Below 4 bits the risk rises steeply, and more so for small models and hard tasks.
+- At equal memory, more parameters at 4-bit usually beat fewer at 8-bit.
+
+**Conflict to fix in the guide:**
+- Current text ("faster" section) says quantization "roughly doubled the answer-truncation rate, because quantized models think longer". 2504.04823 found no increase in output length.
+- The guide's claim came from the 2026-10-16 research (secondary, Qwen3.5-specific). It needs downgrading to "one report", with 2504.04823 cited against it.
+
+**Untested in the literature:**
+- KLD-per-layer "dynamic" GGUFs (Unsloth) against GPTQ/AWQ on the same hybrid Qwen3.8 model.
+- 2-3-bit quants of a 27B versus a 4-bit 9B on agentic tasks.
+- These are the measurements worth running ourselves on the 3090s (perplexity/KLD with `llama-perplexity --kl-divergence`, plus a small task set).
+
+**Metric explainer to teach:**
+- Perplexity measures how surprised the model is by text.
+- KL divergence measures how far the quantized model's next-token distribution moved from full precision, which is the better quant metric.
+- bits per weight is file size ÷ parameters.
+- Q4_K_M on this model is 19.0 GB × 8 ÷ 27.78B ≈ 5.5 bpw including the unquantized embeddings and output (derived). This is a good worked example of why "4-bit" files are bigger than 27.78B × 0.5 bytes = 13.9 GB.
+
+## G. The owner's rig
+
+The owner's current PC reported on 2026-11-03: one RTX 5060 Ti 8 GB, 31.1 GB RAM, Ryzen 5 9600X, driver 610.88. The two RTX 3090s are not in it yet, or are in another machine. Measured numbers in the guide must come from the real 2×3090 box once it is up. The PCIe lane split and system RAM of that box decide what the "larger models" section can claim from our own runs.
+
+---
+
 # Research: Qwen guide audit and evidence base (checked 2026-10-16)
 
 > **Status:** evidence base for `plan.md`, compiled 2026-10-16 by an 11-agent audit (4 auditors over `source/qwen-guide.md`, 3 web scouts, 3 adversarial skeptics, 1 planner). 79 claims verified, 8 refuted, 31 downgraded. Spot-checked by hand afterwards: the llama.cpp RTX 3090 scoreboard (161.89 t/s tg128 with FA, Llama 2 7B Q4_0), the llama-server default port (9931), nanoGPT's deprecation in favour of nanochat, and 16 key resource links (all HTTP 200).
