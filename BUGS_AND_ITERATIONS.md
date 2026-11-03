@@ -1,5 +1,11 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-11-03: BUG: Hero said the guide was about Qwen3.5 only
+
+- **Root cause:** the hero line was written before the NVIDIA sections added Qwen3.8-27B for 24 GB and two-GPU machines, and nobody updated it. Joona spotted it.
+- **Fix:** it now reads "from Qwen3.5 on a laptop to Qwen3.8-27B on one or two 24 GB GPUs".
+- **Verify:** `node scripts/verify.mjs`: PASS (320 checks).
+
 ## 2026-10-31: ITER: Korean themes from the papers archive
 
 - **What:** At Joona's request the four Korean themes from lovespark.love/papers (Seoul Y2K 서울, Gingham Sticker 깅엄, Holo Mochi 모찌, Neon Usagi 네온) are in the **Change Font & Theme** menu under a "Korean" heading. `scripts/build.py` carries the papers archive's `KOREAN` table and its 4.8:1 contrast gate (every text colour against every background, card fill and gradient stop); the papers-only card selectors are mapped to this guide's `.calc` widgets and `.wbtn` buttons. The menu also takes the papers fix for Hangul breaking mid-word and for running off short screens (272 px, no-wrap, `keep-all`, capped and scrollable).
