@@ -1,5 +1,29 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-11-03: ITER: Qwen3.8-27B plan implemented (quantization section, quant calculator, bigger models)
+
+- **What:** Joona said "implement it all". The 2026-11-03 plan is in, with the recommended §5 defaults.
+  - **W2:** a "Qwen3.8-27B, the 24-48 GB pick" subsection: lineage, vendor benchmarks labelled as such, and which build for which memory.
+  - **W3:** a new section, "Quantization, from first principles":
+    - why bits are memory and memory is speed, with a worked table (BF16 to UD-Q3_K_XL);
+    - why "4-bit" is 5.5 bpw (Q4_K is 4.5 bpw per `ggml-common.h`; Q4_K_M bumps attn_v/ffn_down per `llama-quant.cpp`);
+    - the research table (2212.09720, 2504.04823, 2404.14047, 2502.13178): where the papers agree and what is untested;
+    - the bigger-vs-higher-bits rule;
+    - measuring KLD with `llama-perplexity --kl-divergence-base/--kl-divergence`;
+    - the formats table, moved here.
+  - **W4:** a quant calculator (`template/widgets/quant.html`). It uses real GGUF sizes for the 9B, the 27B and the 122B-A10B, with params from the safetensors totals and KV KiB/token from config (32/64/24). It shows bpw, the decode ceiling, and context at f16/q8_0. The maths is in `FineTuneMath.quantCalc` with 16 new verify tests.
+  - **Fit widget:** the Qwen3.8-27B KV is now verified (64 KiB), and UD-Q4_K_XL was added.
+  - **W5:** one-3090 rows for UD-Q4_K_XL and UD-Q5_K_XL.
+  - **W6:** MTP/DFlash and vLLM pointers for two cards, plus a "not measured on a 3090 yet" note.
+  - **W7:** "Bigger than 27B", covering dense vs MoE, the 35B-A3B, 122B-A10B (IQ3_XXS just fits; Q4 needs RAM offload), 70B, and Flash-Next with its licence terms.
+  - **W10:** quantization and vLLM learn-more links.
+- **Caught in testing:** the calculator counted K as 1,024 tokens while the prose used 1,000 (60K vs 64K for the same 4 GB). Both now use thousands, and the one-3090 Q4_K_M row reads ~61K/~122K. The UD-Q4_K_XL row first said 88K; corrected to 82K.
+- **Verify:**
+  - `node scripts/verify.mjs`: PASS (367 checks).
+  - Mutant: setting the 27B's KV to 60 KiB fails "Qwen3.8-27B constants".
+  - `freshness.py`: PASS.
+  - Browser at 320 px: 9 themes, no overflow; the calculator gives 61K/122K on a 3090 at Q4_K_M, 256K-capped on two 3090s at Q8_0, and "doesn't fit" for 122B Q8_0; keyboard focus reaches the selects.
+
 ## 2026-11-03: ITER: vLLM section, and why it beats Ollama for serving
 
 - **What:** Joona asked for vLLM and why it is better than Ollama. The new Part 1 section "vLLM vs Ollama" covers:

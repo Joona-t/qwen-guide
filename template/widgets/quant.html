@@ -1,0 +1,31 @@
+<div class="calc" id="calc-quant">
+  <h3>What does each quant cost and buy?</h3>
+  <p class="csub">Pick a model, a quant and your hardware. File sizes are the real GGUF files (Unsloth and ggml-org repos, checked 2026-11-03). Bits per weight is <code>size × 8 ÷ parameters</code>, the speed ceiling is <code>bandwidth ÷ bytes read per token</code>, and the context is whatever memory is left ÷ the model's KV cost per token.</p>
+  <div class="calc__row">
+    <div class="field"><label for="qmodel">Model</label>
+      <select id="qmodel">
+        <option value="q9">Qwen3.5-9B (dense, 9.65B)</option>
+        <option value="q27" selected>Qwen3.8-27B (dense, 27.78B)</option>
+        <option value="q122">Qwen3.5-122B-A10B (MoE, 125.1B, 10B active)</option>
+      </select></div>
+    <div class="field"><label for="qquant">Quant</label><select id="qquant"></select></div>
+    <div class="field"><label for="qhw">Hardware</label>
+      <select id="qhw">
+        <option value="nv|12|360|1">RTX 3060 12 GB</option>
+        <option value="nv|16|288|1">RTX 4060 Ti 16 GB</option>
+        <option value="nv|24|936|1" selected>RTX 3090 24 GB</option>
+        <option value="nv|48|936|2">2× RTX 3090 48 GB</option>
+        <option value="nv|32|1792|1">RTX 5090 32 GB</option>
+        <option value="mac|16|120|1">Mac 16 GB (base M4)</option>
+        <option value="mac|32|120|1">Mac 32 GB (base M4)</option>
+        <option value="mac|64|273|1">Mac 64 GB (M4 Pro)</option>
+      </select></div>
+  </div>
+  <div class="calc__out" aria-live="polite">
+    <div class="bignum" id="qOut">Fits</div>
+    <div class="outline" id="qBits"></div>
+    <div class="outline" id="qSpeed"></div>
+    <div class="outline" id="qCtx"></div>
+  </div>
+  <p class="calc__caveat"><strong>Estimates, not measurements.</strong> Usable memory is VRAM minus 1 GB per card, or 75% of a Mac's memory. The vision projector (0.6–0.9 GB) is not counted. KV costs come from each model's <code>config.json</code>: 32 KiB per token for the 9B, 64 KiB for the 27B, 24 KiB for the 122B at f16, half that at q8_0. For the MoE model the speed ceiling scales the file by 10 ÷ 125 active weights, which ignores the always-read attention layers, so treat it as rough. Two cards in layer split take turns per token, so the ceiling uses one card's bandwidth. Context is capped at the 262,144-token native window.</p>
+</div>

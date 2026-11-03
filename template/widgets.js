@@ -29,9 +29,22 @@
     return {usable:usable, reserved:o.mem-usable, weights:o.model, kv:kv, need:need,
       verdict: need>usable ? 'no' : (kv===null ? (usable-need>=FIT.unknownKvHeadroom ? 'fits' : 'tight') : (need<=usable*FIT.tightShare ? 'fits' : 'tight'))};
   };
+  /* quant widget (research.md §B, §C, §E): real GGUF sizes (GB, checked 2026-11-03), params from model.safetensors totals, KV KiB/token at f16 from config.json */
+  var QMODELS = {
+    q9:   {name:'Qwen3.5-9B', params:9.65, active:9.65, kvKiB:32, quants:[['UD-IQ2_XXS',3.19],['UD-Q3_K_XL',5.05],['Q4_K_M',5.68],['UD-Q4_K_XL',5.97],['Q5_K_M',6.58],['Q6_K',7.46],['Q8_0',9.53],['BF16',17.92]]},
+    q27:  {name:'Qwen3.8-27B', params:27.78, active:27.78, kvKiB:64, quants:[['UD-IQ2_XXS',7.3],['UD-Q2_K_XL',9.8],['UD-IQ3_XXS',10.9],['UD-Q3_K_XL',13.1],['UD-IQ4_XS',14.3],['UD-Q4_K_XL',17.6],['Q4_K_M',19.0],['UD-Q5_K_XL',20.9],['UD-Q6_K',22.0],['Q8_0',28.6],['BF16',53.8]]},
+    q122: {name:'Qwen3.5-122B-A10B', params:125.09, active:10, kvKiB:24, quants:[['UD-IQ2_XXS',36.6],['UD-IQ3_XXS',44.7],['UD-Q3_K_XL',57.0],['Q4_K_M',76.5],['Q8_0',129.9]]}
+  };
+  var NATIVE_CTX = 262144;
+  var quantCalc = function(o){   // o: {params, active, kvKiB, size, kind, mem, bw, cards, kvType}
+    var usable = o.kind==='mac' ? o.mem*FIT.macShare : o.mem - FIT.gpuReserve*o.cards;
+    var bpw = o.size*8/o.params, perTok = o.kvKiB*1024*(o.kvType==='q8_0' ? FIT.q8 : 1);
+    var left = usable - o.size, ctx = left>0 ? Math.min(NATIVE_CTX, Math.floor(left*1e9/perTok)) : 0;
+    return {usable:usable, bpw:bpw, left:left, ctx:ctx, ceiling: o.bw/(o.size*o.active/o.params), fits: left>0};
+  };
   window.FineTuneMath = Object.freeze({sigmoid:sigmoid, loss:loss, adapter:adapter, weights:weights, QUIZ:QUIZ,
     relu:relu, wiredProgram:wiredProgram, wiredGate:wiredGate, wiredNetwork:wiredNetwork,
-    decode:decode, budget:budget, BUDGET:BUDGET, chain:chain, FIT:FIT, fitCalc:fitCalc, decodeCeiling:decodeCeiling});
+    decode:decode, budget:budget, BUDGET:BUDGET, chain:chain, FIT:FIT, fitCalc:fitCalc, decodeCeiling:decodeCeiling, QMODELS:QMODELS, quantCalc:quantCalc});
 
   if($('calc-step')){
     var w=-2, steps=0, hist=[];
@@ -120,6 +133,27 @@
     };
     ['fhw','fmodel','fcustom','fctx','fkv'].forEach(function(id){ $(id).addEventListener('input',updFit); $(id).addEventListener('change',updFit); });
     updFit();
+  }
+
+  if($('calc-quant')){
+    var fillQuants = function(){
+      var m=QMODELS[$('qmodel').value], keep=$('qquant').value;
+      $('qquant').innerHTML = m.quants.map(function(q){ return '<option value="'+q[0]+'">'+q[0]+', '+q[1]+' GB</option>'; }).join('');
+      var pick = m.quants.some(function(q){ return q[0]===keep; }) ? keep : 'Q4_K_M'; $('qquant').value = pick;
+    };
+    var updQuant = function(){
+      var m=QMODELS[$('qmodel').value], q=m.quants.filter(function(x){ return x[0]===$('qquant').value; })[0], hw=$('qhw').value.split('|');
+      var base={params:m.params, active:m.active, kvKiB:m.kvKiB, size:q[1], kind:hw[0], mem:Number(hw[1]), bw:Number(hw[2]), cards:Number(hw[3])};
+      var f=quantCalc(Object.assign({kvType:'f16'},base)), h=quantCalc(Object.assign({kvType:'q8_0'},base));
+      var k=function(n){ return n>=1000 ? Math.round(n/1000)+'K' : String(n); };   // thousands of tokens, as in the prose
+      $('qOut').textContent = f.fits ? (f.ctx>=8192 ? 'Fits' : 'Barely fits') : 'Doesn’t fit';
+      $('qBits').textContent = m.name+' '+q[0]+': '+q[1]+' GB, about '+f.bpw.toFixed(1)+' bits per weight ('+q[1]+' GB × 8 ÷ '+m.params+'B).';
+      $('qSpeed').textContent = f.fits ? 'Decode ceiling ≈ '+Math.round(f.ceiling)+' tokens/s ('+Number(hw[2]).toLocaleString('en-US')+' GB/s ÷ '+(m.active<m.params ? 'the active share of ' : '')+q[1]+' GB, derived). Real speed is lower.' : 'Needs '+(-f.left).toFixed(1)+' GB more than the '+f.usable.toFixed(1)+' GB usable. Pick a lower quant, more memory, or keep MoE experts in system RAM (see "Bigger than 27B").';
+      $('qCtx').textContent = f.fits ? 'Context that fits: about '+k(f.ctx)+' tokens with an f16 KV cache, '+k(h.ctx)+' with q8_0 ('+f.left.toFixed(1)+' GB left of '+f.usable.toFixed(1)+' GB usable, '+m.kvKiB+' KiB per token at f16).' : '';
+    };
+    $('qmodel').addEventListener('change', function(){ fillQuants(); updQuant(); });
+    ['qquant','qhw'].forEach(function(id){ $(id).addEventListener('change',updQuant); $(id).addEventListener('input',updQuant); });
+    fillQuants(); updQuant();
   }
 
   if($('calc-rel')){
