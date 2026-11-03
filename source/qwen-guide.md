@@ -23,7 +23,7 @@ Find your hardware, run the first model it lists, then read the sections in the 
 | Mac, 64 GB+ | About 48 GB usable at 64 GB | Qwen3.8-27B at 4-bit, or Qwen3.6-35B-A3B (22.1 GB at Q4) | Ollama or LM Studio (MLX) | [Which Qwen?](#models), [Faster and smaller](#faster), [Benchmark your machine](#bench) |
 | NVIDIA, 8–16 GB | VRAM minus about 1 GB, minus the KV cache | `qwen3.5:4b` on 8 GB, `qwen3.5:9b` on 12–16 GB | Ollama, then llama.cpp for MoE offload | [Install Ollama](#install), [Running on an NVIDIA PC](#nvidia-pc), [Faster and smaller](#faster) |
 | RTX 3090 / 4090, 24 GB | About 23 GB, minus the KV cache | Qwen3.8-27B Q4_K_M (19 GB, ~4 GB left) | Ollama, then llama.cpp | [Running on an NVIDIA PC](#nvidia-pc), [Tokens, context and the KV cache](#tokens), [Benchmark your machine](#bench) |
-| Two RTX 3090s, 48 GB | About 46 GB (1 GB off each card), minus the KV cache, split across both cards | Qwen3.8-27B Q8_0 (28.6 GB) or Qwen3.6-35B-A3B Q8_0 (36.9 GB) | llama.cpp layer split, or vLLM on Linux | [Running on an NVIDIA PC](#nvidia-pc), [Benchmark your machine](#bench) |
+| Two RTX 3090s, 48 GB | About 46 GB (1 GB off each card), minus the KV cache, split across both cards | Qwen3.8-27B Q8_0 (28.6 GB) or Qwen3.6-35B-A3B Q8_0 (36.9 GB) | llama.cpp layer split, or vLLM on Linux | [Running on an NVIDIA PC](#nvidia-pc), [vLLM vs Ollama](#vllm), [Benchmark your machine](#bench) |
 | AMD, Intel Arc or CPU-only | Same as discrete GPU; CPU-only uses system RAM | `qwen3.5:4b`, or `qwen3.5:2b` on CPU | Ollama | [Install Ollama](#install) (this guide covers these briefly) |
 
 > ◆ **AMD, Intel Arc and CPU-only get a short treatment here.** Ollama supports AMD cards through the ROCm v7 driver on Linux, and on Windows through a ROCm v7 / HIP7 driver stack for the Radeon RX 7600 to 7900 and PRO W7500 to W7900. Other GPUs, Intel included, can use Ollama's Vulkan backend on Windows and Linux. With no usable GPU, Ollama runs on the CPU, which works but is slow. The rest of this guide is tested against Apple Silicon and NVIDIA only.
@@ -589,12 +589,70 @@ On Windows and Linux with an NVIDIA card, the field is wider. The table was chec
 | Ollama | Windows 10 22H2+ (driver 551.61+), Linux, macOS | The easiest start | Automatic; pin cards with `CUDA_VISIBLE_DEVICES` (UUIDs) | GGUF |
 | llama.cpp | Windows prebuilt CUDA builds; Linux | Control, benchmarking, `--n-cpu-moe` offload | `-sm`, `-ts`, `-mg` flags | GGUF |
 | LM Studio | Windows x64 (AVX2) or ARM, Linux AppImage, macOS | A GUI plus a server (examples use port 1234) | Per-GPU on/off; CUDA tensor parallel in recent builds | GGUF; MLX on Mac |
-| vLLM | Linux only (Windows through WSL2) | Batching, many agents at once | Tensor and pipeline parallel | AWQ, GPTQ, INT8, GGUF; FP8/FP4 weight-only on a 3090 |
+| vLLM | Linux only (Windows through WSL2) | Batching, many agents at once ([vLLM vs Ollama](#vllm)) | Tensor and pipeline parallel | AWQ, GPTQ, INT8, GGUF (experimental plugin); FP8/FP4 weight-only on a 3090 |
 | SGLang | Linux, CUDA 13 only | Serving, structured output | `--tp-size` | AWQ, GPTQ, FP8 (Ampere support UNCERTAIN) |
 | ExLlamaV3 + TabbyAPI | Windows (triton-windows), Linux | Quality per GB on a 24 GB card; API on port 5000 | Tensor and expert parallel | EXL3 |
 | KoboldCpp | Windows exe, Linux binary | One file to run; API on port 5001 | UNCERTAIN | GGUF |
 
 > ⚠ **llama-server moved its default port.** It now listens on 127.0.0.1:9931, not 8080. Pass the port every time so your scripts don't break, for example `llama-server -m model.gguf --host 127.0.0.1 --port 8080`.
+
+<!-- section id="vllm" toc="vLLM vs Ollama" kicker="Part 1 · Run Qwen locally" -->
+## vLLM: why it beats Ollama for serving, and where it doesn't
+
+[vLLM](https://docs.vllm.ai/) is a serving engine: a program built to answer many requests at once from one GPU box. Ollama is built to make one model easy to run for one person. Both serve the same OpenAI-style API, so a client written for one works with the other. The difference is what happens when several requests arrive together, and what happens when you have two GPUs.
+
+### Why it is faster under load
+
+Every request needs its own KV cache, and the cache grows one token at a time. Older servers reserved one long block of memory per request, so most of it sat empty. vLLM's **PagedAttention** stores the cache in small pages, like an operating system's virtual memory, and hands them out as tokens arrive. Almost no memory is wasted, so many more requests fit at once. Its paper measured **2–4× the throughput** of the best servers of the time (FasterTransformer and Orca) at the same latency ([arXiv 2309.06180](https://arxiv.org/abs/2309.06180)).
+
+Three more features follow from that design:
+- **Continuous batching.** New requests join the running batch at every step instead of waiting for the batch to finish. The GPU stays busy, and one long answer doesn't hold up short ones.
+- **Prefix caching.** Requests that share a beginning, such as the same system prompt or the same retrieved document, reuse its KV cache instead of computing it again. It is on by default in v0.32.0. For agents and RAG this cuts the prefill wait you see before the first word.
+- **Tensor parallelism.** `--tensor-parallel-size 2` splits every layer across two GPUs, so both cards work on every token. Ollama does not do this. Its FAQ says it loads a model onto a single GPU if it fits, and otherwise spreads the layers across cards, which then take turns.
+
+### What the numbers say
+
+Red Hat tested both on one A100 40 GB with Llama 3.1 8B at 16-bit, from 1 to 256 concurrent users. vLLM peaked at **793 tokens per second** against Ollama's **41**, with P99 latency at peak of 80 ms against 673 ms ([Red Hat Developer, Aug 2025](https://developers.redhat.com/articles/2025/08/08/ollama-vs-vllm-deep-dive-performance-benchmarking)). That held even with Ollama tuned to `OLLAMA_NUM_PARALLEL=32`. Red Hat ships a vLLM-based product, so read it as a vendor benchmark. Independent blog tests agree on the direction but not the size of the gap, and several compare different precisions.
+
+**With one user, the gap mostly disappears.** Writing an answer one token at a time is limited by memory bandwidth, not by the engine, so both hit the same ceiling (see "What you're actually running"). One blog test put the two within about 15% of each other at one request ([aifoss via DEV](https://dev.to/jovan_chan_9500711396d4e6/ollama-vs-vllm-2026-56mf), secondary, unreplicated here). Ollama's `OLLAMA_NUM_PARALLEL` defaults to 1 (Ollama FAQ, checked 2026-11-03), and that, more than raw speed, is why its throughput stays flat as users are added.
+
+### Which to use
+
+| You have | Use | Why |
+|---|---|---|
+| One person, one model, any OS | Ollama | Simplest start, any quant size, a Mac or Windows natively; vLLM wouldn't be faster for you |
+| A Mac | Ollama, LM Studio or `mlx-lm` | vLLM is NVIDIA-first; the Mac plugin is slower than llama.cpp (see "Faster and smaller") |
+| Several agents or people hitting one model | vLLM | Continuous batching and paged KV memory scale with the number of requests |
+| Two GPUs and one big model | vLLM with `--tensor-parallel-size 2`, or llama.cpp `-sm tensor` | Both cards work on every token |
+| A model that only fits as a 2–3-bit GGUF | Ollama or llama.cpp | vLLM's GGUF support is an experimental plugin; it is built around AWQ, GPTQ and FP8 |
+
+**What vLLM costs you.** It is Linux only (Windows through WSL2). It needs compute capability 7.5 or newer, so an RTX 2000-series card or later; the 3090 is 8.6. It takes most of the GPU for itself: `--gpu-memory-utilization` defaults to 0.92, so nothing else should share that card. It starts slower, and it has more flags to get right.
+
+### Qwen3.8-27B on two RTX 3090s with vLLM
+
+> ◆ **Untested on a 3090 here.** Qwen's own vLLM recipe lists RTX 5090, Blackwell, Intel Arc and Ascend setups, with no Ampere example. The pieces below are each documented for Ampere, but this exact combination hasn't been run for this guide yet. Treat it as a starting point and check the server log.
+
+On a 3090, vLLM can run 4-bit AWQ or GPTQ through its Marlin kernels, and FP8 checkpoints as weight-only FP8 (W8A16, also Marlin). Native FP8 maths needs compute capability 8.9 or newer (vLLM quantization docs, checked 2026-11-03). Two options fit 48 GB:
+- **AWQ 4-bit.** `cyankiwi/Qwen3.8-27B-AWQ-INT4`, a community build at about 21 GB, is the most downloaded. It leaves the most room for context and parallel requests.
+- **FP8.** The official `Qwen/Qwen3.8-27B-FP8` is about 28.5 GB. It is closer to full quality and leaves about 15 GB for the cache once vLLM takes its 92%.
+
+```bash
+pip install vllm                     # v0.32.0 is the latest stable release (2026-10-18); Linux or WSL2
+vllm serve cyankiwi/Qwen3.8-27B-AWQ-INT4 \
+  --tensor-parallel-size 2 \
+  --max-model-len 65536 \
+  --reasoning-parser qwen3 \
+  --enable-auto-tool-choice --tool-call-parser qwen3_coder \
+  --host 127.0.0.1 --port 8000 --api-key "$VLLM_API_KEY"
+```
+
+- `--tensor-parallel-size 2` uses both cards. Without NVLink, vLLM's docs suggest trying `--pipeline-parallel-size 2` instead; measure both.
+- `--max-model-len` caps the context. Each request's cache costs 64 KiB per token for this model (see "Tokens, context and the KV cache"), and vLLM shares what's left among all requests.
+- `--reasoning-parser qwen3` puts the `<think>` text in a separate `reasoning_content` field, and the tool-call flags turn the model's tool calls into the OpenAI `tool_calls` format. Both come from Qwen's vLLM recipe.
+- `--host 127.0.0.1` keeps it off your network. The default host is unset, so pass it every time, along with an API key.
+- **Speculative decoding.** Qwen's recipe adds `--speculative-config '{"method":"mtp","num_speculative_tokens":3}'` to use the model's built-in MTP heads. That needs a checkpoint that kept its MTP weights. The official FP8 and the cyankiwi AWQ build both list them in their weight index (checked 2026-11-03); check the acceptance rate in the log before keeping it on.
+
+Point any OpenAI client at `http://127.0.0.1:8000/v1`. Measure with several requests at once, since that is where vLLM pays off: `vllm bench serve` sends concurrent requests and reports throughput and latency.
 
 <!-- section id="faster" toc="Faster and smaller" kicker="Part 1 · Run Qwen locally" -->
 ## Faster and smaller: engines and quantization

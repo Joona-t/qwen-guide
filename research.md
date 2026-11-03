@@ -131,6 +131,32 @@ There is no official Qwen GPTQ/AWQ for 3.8, unlike Qwen3.5-27B-GPTQ-Int4 (2026-0
 
 The owner's current PC reported on 2026-11-03: one RTX 5060 Ti 8 GB, 31.1 GB RAM, Ryzen 5 9600X, driver 610.88. The two RTX 3090s are not in it yet, or are in another machine. Measured numbers in the guide must come from the real 2×3090 box once it is up. The PCIe lane split and system RAM of that box decide what the "larger models" section can claim from our own runs.
 
+
+## H. vLLM against Ollama (checked 2026-11-03)
+
+- **vLLM releases:** v0.32.0 is the latest stable (2026-10-18). v0.33.0rc3 (2026-11-02) is a pre-release.
+- **GPU requirement:** compute capability ≥ 7.5 (installation docs). The RTX 3090 is 8.6.
+- **Defaults** (`vllm/config/cache.py` at v0.32.0): `gpu_memory_utilization` 0.92 and `enable_prefix_caching` True.
+- **Server defaults** (`vllm/entrypoints/common/cli_args.py`): port 8000, host unset (`None`).
+- **Quantization on Ampere** (`docs/features/quantization/README.md`; `llm_compressor/fp8.md`):
+  - AWQ, GPTQ and Marlin (GPTQ/AWQ/FP8/FP4) work on Ampere.
+  - FP8 W8A8 needs Ada (8.9) or newer. On Turing/Ampere, FP8 runs as weight-only W8A16 via Marlin.
+  - GGUF moved to the out-of-tree `vllm-gguf-plugin`; the docs call it "highly experimental".
+- **Qwen3.8-27B vLLM recipe** (recipes.vllm.ai):
+  - Flags: `--reasoning-parser qwen3`, `--enable-auto-tool-choice --tool-call-parser qwen3_coder`, and MTP via `--speculative-config '{"method":"mtp","num_speculative_tokens":3}'`.
+  - Hardware covered: RTX 5090 (TP1/TP2), Blackwell, Intel Arc and Ascend. **No Ampere recipe.**
+- **MTP weights in quantized checkpoints** (weight index): `Qwen/Qwen3.8-27B-FP8` has 22 mtp keys, and `cyankiwi/Qwen3.8-27B-AWQ-INT4` has 15 (21.0 GB of safetensors).
+- **PagedAttention** ([arXiv 2309.06180](https://arxiv.org/abs/2309.06180)): 2-4× throughput against FasterTransformer and Orca at the same latency. The gain is larger with longer sequences and bigger models. Primary, peer-reviewed (SOSP 2023).
+- **Red Hat benchmark** (developers.redhat.com, 2025-08-08):
+  - Setup: one A100-PCIE-40GB; vLLM 0.9.1 against Ollama 0.9.2; Llama-3.1-8B at fp16; 1-256 users.
+  - Result: peak 793 vs 41 TPS, and P99 80 vs 673 ms. Ollama tuned to `OLLAMA_NUM_PARALLEL=32` still lost.
+  - Caveats: this is a vendor source (Red Hat ships vLLM), and the configuration behind the 41 TPS figure is not stated.
+- **Secondary blogs:** computingforgeeks reports 2.8-4.4× at 64 concurrent; aifoss/DEV reports ~71 vs 62 tok/s at one request. These are unreplicated, and some compare different precisions.
+- **Ollama FAQ (main):**
+  - `OLLAMA_NUM_PARALLEL` defaults to 1.
+  - A model is loaded onto one GPU if it fits, and otherwise spread across GPUs. There is no tensor parallelism.
+- **Untested:** vLLM with Qwen3.8-27B's hybrid Gated-DeltaNet layers on SM86. This needs a run on the 2×3090 rig (plan §3.4).
+
 ---
 
 # Research: Qwen guide audit and evidence base (checked 2026-10-16)
