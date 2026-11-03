@@ -13,6 +13,8 @@ const near = (a, b, t = 1e-9) => ok(Math.abs(a - b) < t, `${a} != ${b}`);
 
 // 1. index.html is exactly what the build produces from the Markdown
 execFileSync('python3', ['-I', 'scripts/build.py', '--check'], { cwd: root, stdio: 'pipe' }); checks++;
+// 1b. no stale scope or settled-UNCERTAIN text, no dated claim older than 45 days (scripts/freshness.py)
+execFileSync('python3', ['-I', 'scripts/freshness.py'], { cwd: root, stdio: 'pipe' }); checks++;
 
 // 2. widget math, run from the page's own script
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];

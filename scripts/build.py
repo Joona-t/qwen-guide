@@ -230,7 +230,7 @@ def build():
 <meta name="description" content="{desc}">
 <meta property="og:title" content="Qwen, locally · run it, fine-tune it, understand abliteration">
 <meta property="og:description" content="{desc}">
-<meta property="og:url" content="https://lovespark.love/qwen-fine-tuning-guide/">
+<meta property="og:url" content="https://lovespark.love/qwen-guide/">
 <meta name="theme-color" content="#16171a">
 <style>
 {css}</style>
@@ -240,10 +240,10 @@ def build():
 <div id="progress" class="progress" aria-hidden="true"></div>
 
 <header class="topbar">
-  <a class="wordmark" href="#top" aria-label="Fine-tune Qwen locally, back to top">
+  <a class="wordmark" href="#top" aria-label="Qwen, locally, back to top">
     <img src="{mascot}" alt="Sparky, the LoveSpark wolf mascot">
     <img class="wordmark-ankh" src="{ankh}" alt="" aria-hidden="true">
-    <span class="wordmark-text"><span class="wordmark-title">Qwen, locally</span><span class="wordmark-sub">A LoveSpark guide · Oct 2026</span></span>
+    <span class="wordmark-text"><span class="wordmark-title">Qwen, locally</span><span class="wordmark-sub">A LoveSpark guide · Nov 2026</span></span>
   </a>
   <nav class="topnav" aria-label="Main navigation">
     <a href="#run-basics">Run</a>
