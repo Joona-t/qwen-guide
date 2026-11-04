@@ -1,5 +1,10 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-11-04: ITER: Basalt is the default theme again
+
+- **What:** Joona reversed the Holo Mochi default the same day: Basalt is "more long read friendly". Reverted `scripts/build.py` and the `template/base.js` fallback to `basalt`. Readers whose browser saved `kr-holo` during the few hours it was the default keep it (saved choices win).
+- **Verify:** `python3 scripts/build.py` then `node scripts/verify.mjs`: PASS, 367 checks. Local preview with storage cleared: `data-theme="basalt"`, `data-font="serif"`, Basalt menu item `aria-checked="true"`; hero screenshot shows Basalt in Cinzel.
+
 ## 2026-11-04: ITER: Holo Mochi is the default theme
 
 - **What:** Joona asked for Holo Mochi (Korean set, `kr-holo`) as the default. Changed the `<html data-theme>` in `scripts/build.py` and the no-saved-choice fallback in `template/base.js`. Saved choices still win, so readers who already have a theme stored keep it.
