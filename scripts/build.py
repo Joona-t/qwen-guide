@@ -222,7 +222,7 @@ def build():
     body = "\n\n    ".join(sections)
     toc_items = toc_html(toc)
     return f"""<!doctype html>
-<html lang="en" data-theme="kr-holo" data-font="serif">
+<html lang="en" data-theme="basalt" data-font="serif">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
