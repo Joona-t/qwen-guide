@@ -30,9 +30,9 @@
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !menu.hidden){ openMenu(false); btn.focus(); } });
   // 'candy' was renamed 'bubblegum' on 2026-10-25; apply() re-saves the new name.
   var savedTheme = Persist.get('qft-theme');
-  // Basalt (lovespark.love's look) is the default since 2026-10-27; its Serif setting reads in
-  // Cinzel. Saved choices win, so returning readers keep their theme and font.
-  apply('theme', savedTheme === 'candy' ? 'bubblegum' : (savedTheme || 'basalt'));
+  // Holo Mochi is the default since 2026-11-04 (Basalt was 2026-10-27 to 11-03).
+  // Saved choices win, so returning readers keep their theme and font.
+  apply('theme', savedTheme === 'candy' ? 'bubblegum' : (savedTheme || 'kr-holo'));
   apply('font', Persist.get('qft-font') || 'serif');
 
   /* ---- Copy buttons on code blocks ---- */
