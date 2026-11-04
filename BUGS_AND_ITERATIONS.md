@@ -1,5 +1,10 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-11-04: ITER: Holo Mochi is the default theme
+
+- **What:** Joona asked for Holo Mochi (Korean set, `kr-holo`) as the default. Changed the `<html data-theme>` in `scripts/build.py` and the no-saved-choice fallback in `template/base.js`. Saved choices still win, so readers who already have a theme stored keep it.
+- **Verify:** `python3 scripts/build.py` then `node scripts/verify.mjs`: PASS, 367 checks. Local preview with storage cleared: `data-theme="kr-holo"`, `data-font="serif"`, Holo Mochi menu item `aria-checked="true"`; hero screenshot shows the Holo Mochi palette.
+
 ## 2026-11-03: ITER: LLM101n callout links the repo and says what it is
 
 - **What:** Joona pointed at github.com/karpathy/LLM101n. The old callout ("LLM101n is not a course… has not been released") was correct, but it gave no link and no reason. It now links the repo and quotes the README ("this course does not yet exist", being built by Eureka Labs). It also gives the archive date (2024-08-01, only a README and an image) and maps the syllabus onto the free materials that already exist (Zero to Hero, minbpe, build-nanogpt, nanochat).
