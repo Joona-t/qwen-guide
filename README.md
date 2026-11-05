@@ -16,7 +16,7 @@ It absorbed the earlier **Qwen Local** guide (a 16 GB Mac build companion) in Oc
 
 **Part 4 — Abliteration.** How refusal removal works, what later research found, the measured capability cost, a full responsibility-and-safety section with a decision check, the three local routes (published models, Heretic, by hand), and how to evaluate the result.
 
-Each part ends with a **Learn more** list. A **Reference** section has troubleshooting, sources and caveats. Every command and number was checked against a primary source in **October 2026**; anything that isn't is labelled *secondary* or *untested*.
+Each part ends with a **Learn more** list. A **Reference** section has a free learning path, **papers worth reading** with prompts for having your agent read them and find new ones, troubleshooting, sources and caveats. Every command and number was checked against a primary source in **October 2026**; anything that isn't is labelled *secondary* or *untested*.
 
 ## Editing
 
@@ -25,6 +25,7 @@ Each part ends with a **Learn more** list. A **Reference** section has troublesh
 ```bash
 python3 scripts/build.py      # regenerate index.html
 node scripts/verify.mjs       # build freshness, widget math, anchors, no network, no personal paths
+python3 -I scripts/check_papers.py   # needs network: every reading-list link matches its arXiv title
 ```
 
 Parts, sections and widgets are placed with HTML comments inside the Markdown (`<!-- part ... -->`, `<!-- section ... -->`, `<!-- widget:name -->`), so the file still reads cleanly on GitHub. Widgets, styles (`template/style.css`), the bundled font and the page script are in `template/`.
