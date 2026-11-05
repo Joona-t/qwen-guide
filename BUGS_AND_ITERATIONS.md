@@ -1,5 +1,11 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-11-05: ITER: "Papers worth reading" section, plus prompts for agents
+
+- **What:** Joona asked for recommended papers, and for suggesting that readers have their agents read them or search for recent papers and look for abstractions to reuse. New Reference section `#papers`: how to read a paper (with two paper-and-rebuttal pairs), a 35-entry list by topic with the 2026 preprints marked, two copyable agent prompts (read one paper; search the last 90 days), the `pdftotext` route for small context windows, warnings that papers are untrusted input and that agents can invent citations, and a one-change-at-a-time closing. Linked from the intro, the goal table and "Stay current".
+- **Bug caught before merge:** three details written from memory were wrong: an arXiv ID (2306.12001 is not Representation Engineering) and the titles of 2504.04823 and 2306.00978. **Root cause:** citing from memory. **Prevention:** `scripts/check_papers.py` compares every link in the section with its arXiv title; link text must be the exact title. It needs network, so it's a manual step, not part of `verify.mjs`. Enforcement is therefore partial.
+- **Verify:** `node scripts/verify.mjs`: PASS, 384 checks. `check_papers.py`: 35 papers PASS, and FAIL on a deliberately wrong ID. Both `curl` commands and the `pdftotext` steps were run; the Minions paper came to 18,179 words. Headless Chrome at 1400 px and 390 px. Notes come from abstracts, and the section says so. **Not tested:** neither prompt has been run on a local model (no Ollama on this Mac), and the section labels them untested.
+
 ## 2026-11-04: ITER: Basalt is the default theme again
 
 - **What:** Joona reversed the Holo Mochi default the same day: Basalt is "more long read friendly". Reverted `scripts/build.py` and the `template/base.js` fallback to `basalt`. Readers whose browser saved `kr-holo` during the few hours it was the default keep it (saved choices win).
