@@ -22,8 +22,8 @@ Find your hardware, run the first model it lists, then read the sections in the 
 | Mac, 24–32 GB | About 18–24 GB usable | `qwen3.5:9b`; on 32 GB, try Qwen3.8-27B at 4-bit (18 GB) | Ollama | [Which Qwen?](#models), [Tokens, context and the KV cache](#tokens), [Benchmark your machine](#bench) |
 | Mac, 64 GB+ | About 48 GB usable at 64 GB | Qwen3.8-27B at 4-bit, or Qwen3.6-35B-A3B (22.1 GB at Q4) | Ollama or LM Studio (MLX) | [Which Qwen?](#models), [Faster and smaller](#faster), [Benchmark your machine](#bench) |
 | NVIDIA, 8–16 GB | VRAM minus about 1 GB, minus the KV cache | `qwen3.5:4b` on 8 GB, `qwen3.5:9b` on 12–16 GB | Ollama, then llama.cpp for MoE offload | [Install Ollama](#install), [Running on an NVIDIA PC](#nvidia-pc), [Faster and smaller](#faster) |
-| RTX 3090 / 4090, 24 GB | About 23 GB, minus the KV cache | Qwen3.8-27B Q4_K_M (19 GB, ~4 GB left) | Ollama, then llama.cpp | [Running on an NVIDIA PC](#nvidia-pc), [Quantization](#quant), [Tokens, context and the KV cache](#tokens), [Benchmark your machine](#bench) |
-| Two RTX 3090s, 48 GB | About 46 GB (1 GB off each card), minus the KV cache, split across both cards | Qwen3.8-27B Q8_0 (28.6 GB) or Qwen3.6-35B-A3B Q8_0 (36.9 GB) | llama.cpp layer split, or vLLM on Linux | [Running on an NVIDIA PC](#nvidia-pc), [vLLM vs Ollama](#vllm), [Bigger than 27B](#nvidia-pc), [Benchmark your machine](#bench) |
+| RTX 3090 / 4090, 24 GB | About 23 GB, minus the KV cache | Qwen3.8-27B Q4_K_M (19 GB, ~4 GB left) | Ollama, then llama.cpp; Linux recommended | [Linux for local AI](#linux), [Running on an NVIDIA PC](#nvidia-pc), [Quantization](#quant), [Tokens, context and the KV cache](#tokens), [Benchmark your machine](#bench) |
+| Two RTX 3090s, 48 GB | About 46 GB (1 GB off each card), minus the KV cache, split across both cards | Qwen3.8-27B Q8_0 (28.6 GB) or Qwen3.6-35B-A3B Q8_0 (36.9 GB) | Linux, then llama.cpp `-sm tensor` or vLLM (Ollama would use one card at a time) | [Linux for local AI](#linux), [vLLM vs Ollama](#vllm), [Running on an NVIDIA PC](#nvidia-pc), [Bigger than 27B](#nvidia-pc), [Benchmark your machine](#bench) |
 | AMD, Intel Arc or CPU-only | Same as discrete GPU; CPU-only uses system RAM | `qwen3.5:4b`, or `qwen3.5:2b` on CPU | Ollama | [Install Ollama](#install) (this guide covers these briefly) |
 
 > ◆ **AMD, Intel Arc and CPU-only get a short treatment here.** Ollama supports AMD cards through the ROCm v7 driver on Linux, and on Windows through a ROCm v7 / HIP7 driver stack for the Radeon RX 7600 to 7900 and PRO W7500 to W7900. Other GPUs, Intel included, can use Ollama's Vulkan backend on Windows and Linux. With no usable GPU, Ollama runs on the CPU, which works but is slow. The rest of this guide is tested against Apple Silicon and NVIDIA only.
@@ -320,7 +320,7 @@ CUDA_VISIBLE_DEVICES=GPU-xxxxxxxx  # pin a card; get the UUID from nvidia-smi -L
 
 ### Windows: native or WSL2?
 
-Run Ollama natively on Windows unless you need a Linux-only tool. vLLM and SGLang are the common reasons: vLLM runs on Windows only through WSL2. If you do use WSL2 with an NVIDIA card, follow NVIDIA's rules:
+If you stay on Windows, run Ollama natively. For a PC set up for local AI, this guide recommends Linux instead (see "Linux for local AI"): vLLM and SGLang are Linux only and run on Windows only through WSL2. If you do use WSL2 with an NVIDIA card, follow NVIDIA's rules:
 
 - Install only the normal Windows NVIDIA driver. Never install a Linux display driver inside WSL. The Windows driver already exposes the GPU to it.
 - If you build CUDA code inside WSL, install the WSL-Ubuntu CUDA toolkit or the `cuda-toolkit-12-x` metapackage only. Do not install the `cuda`, `cuda-12-x` or `cuda-drivers` metapackages there.
@@ -328,6 +328,77 @@ Run Ollama natively on Windows unless you need a Linux-only tool. vLLM and SGLan
 - Docker inside WSL2 supports only `--gpus all`, not picking single GPUs.
 
 > ◆ **Ollama's MLX runner on a 16 GB Mac is undocumented.** Since v0.40.0, Ollama runs supported models (Qwen3.5, Qwen3.6, Qwen3.8 and Gemma 4 included) on Apple's MLX by default. The March 2026 preview post said MLX wanted more than 32 GB of unified memory; the v0.40.0 release notes state no memory requirement. What a 16 GB Mac does is not documented. Check `ollama ps` and the server log to see which runner loaded, and compare speed against a `-q4_K_M` tag if in doubt.
+
+<!-- section id="linux" toc="Linux for local AI" kicker="Part 1 · Run Qwen locally" -->
+## Linux: the platform local AI is built on
+
+If you're setting up a PC for local models, use Linux. You don't have to: Ollama, LM Studio and llama.cpp all run on Windows. But the tools in this guide are written for Linux first, and the more you grow into them, the more Windows gets in the way.
+
+### Why Linux
+
+- **Some of the best tools only run there.** vLLM and SGLang, the servers for two GPUs and for many requests at once (see "vLLM vs Ollama"), are Linux only. On Windows they need WSL2, a Linux system running inside Windows, which is one more layer between you and the GPU.
+- **Everything else gets tested there first.** NVIDIA's CUDA tools, Docker with GPUs, research code from papers, and fine-tuning tools like Unsloth assume Linux. Windows instructions, when they exist, tend to come later and break more often.
+- **AI agents work well with it.** Linux is plain text all the way down: commands, config files, logs. A coding agent like Claude Code can read a log, edit a service file and restart a server by itself. On Windows, half of that lives in settings windows an agent can't see.
+- **It's what servers run.** What you learn on your own machine carries straight over to cloud GPUs and work.
+- **It's free,** and it leaves more memory and disk for models.
+
+> 📝 **From the author.** I run Ubuntu on my own PC with two RTX 3090s, and keep a small Windows install alongside it for the odd job that needs Windows. I don't find Windows a good platform for local AI. Setting up a fresh Windows install was more frustrating than setting up Ubuntu, and Linux made working with my AI agents easier. I'm still learning Linux myself; you don't need to know it before you start.
+
+### Which Linux
+
+A Linux "distribution" is a complete system built around the Linux kernel. Two are worth knowing for this:
+
+| Distribution | What it is | Choose it if |
+|---|---|---|
+| [Ubuntu](https://ubuntu.com/download/desktop) LTS | The most widely used desktop Linux, with five years of updates per long-term release | You want the path every guide and every error message on the internet assumes. NVIDIA, CUDA and vLLM document Ubuntu first. This guide's commands target it. |
+| [Omarchy](https://omarchy.org/) | David Heinemeier Hansson's opinionated setup built on Arch Linux, with the Hyprland tiling window manager and a keyboard-first workflow. Version 4.5.0 in November 2026. | You want a fast, beautiful, keyboard-driven desktop and newer software. Its site says NVIDIA drivers are set up during installation. |
+
+We haven't used Omarchy ourselves, so this guide can't vouch for it. Arch-based systems get new drivers and libraries sooner than Ubuntu LTS, which helps with brand-new GPUs and models, but updates can also break things more often. If this is your first Linux, start with Ubuntu.
+
+**Keeping Windows too.** You can install Linux next to Windows and pick one at boot ("dual boot"). If the clock is off by hours after switching between them, that's because Windows and Linux read the PC's hardware clock differently. On Ubuntu, `timedatectl set-local-rtc 1` makes Linux read it the Windows way. Don't add `--adjust-system-clock`: it rewrites the time from the wrong reference and leaves the clock hours off.
+
+### From a fresh Ubuntu install to a working GPU
+
+1. **Install the NVIDIA driver.** Ubuntu picks the right one for your card:
+  ```bash
+  sudo ubuntu-drivers list        # see which drivers fit your card
+  sudo ubuntu-drivers install     # install the recommended one, then reboot
+  ```
+  Ubuntu's docs recommend these "UDA" drivers for desktops, and the `--gpgpu` server drivers for machines that only compute.
+2. **Check the GPU is visible.** After the reboot, `nvidia-smi` should list every card with its memory. If it says "No devices were found", Ubuntu's docs say to check whether the open-source `nouveau` driver loaded instead (`lsmod | grep nouveau`). If it reports a driver/library version mismatch, reboot.
+3. **Install Ollama** with `curl -fsSL https://ollama.com/install.sh | sh`. It sets itself up as a background service; the Linux settings are under "Install Ollama" above.
+4. **Turn on remote access** if you'll use the PC from a laptop: `sudo apt install openssh-server`, then `ssh you@the-pc`. A private network like Tailscale lets you reach it from anywhere without opening ports to the internet.
+5. **Install vLLM when you need it**, in its own Python environment (see "vLLM vs Ollama").
+
+### The commands you'll actually use
+
+You don't need to learn Linux before you start. These cover most of what this guide asks you to type:
+
+| Command | What it does |
+|---|---|
+| `ls`, `cd`, `pwd` | List a folder, move into one, show where you are |
+| `cat`, `less` | Print a file, or page through a long one (`q` to quit) |
+| `nano file.txt` | Edit a file in the terminal (`Ctrl+O` saves, `Ctrl+X` exits) |
+| `sudo <command>` | Run one command as administrator; it asks for your password |
+| `sudo apt update && sudo apt upgrade` | Update every installed program |
+| `nvidia-smi` | Show each GPU's memory, load, temperature and power |
+| `htop` | Show running programs and memory use (`sudo apt install htop`) |
+| `systemctl status ollama` | Is the Ollama service running? `restart` restarts it |
+| `journalctl -u ollama -f` | Follow Ollama's log live; `Ctrl+C` stops |
+| `ssh you@the-pc` | Open a terminal on another machine |
+
+> 📝 **Let an agent teach you.** A coding agent that runs on your machine can explain every command before it runs it. Ask it to, and read the explanation before you approve the command. You'll learn faster than from a book, as long as you never approve a command you don't understand, especially anything with `sudo` or `rm`.
+
+### Learn Linux for free
+
+| Resource | By | Format | Teaches | Free? |
+|---|---|---|---|---|
+| [The Linux command line for beginners](https://ubuntu.com/tutorials/command-line-for-beginners) | Canonical | Tutorial, about an hour | Your first terminal session on Ubuntu | Free |
+| [The Missing Semester of Your CS Education](https://missing.csail.mit.edu/) | MIT | 9 lectures (2026 edition), with videos | The shell, editors, Git, debugging, and agentic coding tools | Free online |
+| [Introduction to Linux (LFS101)](https://training.linuxfoundation.org/training/introduction-to-linux/) | The Linux Foundation | Self-paced course, 60 hours | A full grounding: files, users, processes, networking | Free ($0), 90 days of access |
+| [OverTheWire: Bandit](https://overthewire.org/wargames/bandit/) | OverTheWire | A game in levels, over SSH | The command line, by solving puzzles | Free |
+| [The Linux Command Line](https://linuxcommand.org/tlcl.php) | William Shotts | Book | The shell in depth, from beginner to scripting | The book's page links a download from its SourceForge project |
+| [ArchWiki: NVIDIA](https://wiki.archlinux.org/title/NVIDIA) | Arch Linux community | Reference wiki | The best GPU-driver reference on any distribution, including Ubuntu | Free |
 
 <!-- section id="nvidia-pc" toc="Running on an NVIDIA PC" kicker="Part 1 · Run Qwen locally" -->
 ## Running on an NVIDIA PC: from an RTX 3060 to an RTX 3090, and two of them
@@ -410,14 +481,14 @@ The cap resets on reboot, so re-apply it at boot with a systemd unit. The effect
 
 Two cards give you 48 GB, but each card still holds only its share. llama.cpp has three ways to split a model.
 - **By layers** (llama.cpp's default, `-sm layer`). Each card holds a block of layers and they take turns. It is simple and works over any PCIe link.
-- **By rows** (`-sm row`). Each layer is split across both cards. It needs more traffic between them. `-ts 1,1` sets the share per card, and `-mg` picks the main GPU.
-- **By tensor** (`-sm tensor`, new and marked experimental in llama.cpp v0.8.0, 2026-10-28). Weights and the KV cache are split so both cards work on every token, like vLLM's tensor parallelism. Whether it supports Qwen3.8-27B's hybrid architecture on your build is untested here: compare it against `-sm layer` with `llama-bench` before relying on it.
+- **By rows** (`-sm row`). Each layer is split across both cards. It needs more traffic between them. `-ts 1,1` sets the share per card, and `-mg` picks the main GPU. One October 2026 test found it fails on CUDA with a split-buffer error; prefer `-sm tensor`.
+- **By tensor** (`-sm tensor`, new and marked experimental in llama.cpp v0.8.0, 2026-10-28). Weights and the KV cache are split so both cards work on every token, like vLLM's tensor parallelism. On two 3090s it measured about 1.64× the speed of `-sm layer` on a 70B and 1.69× one card on a 32B (see "vLLM vs Ollama" for the table; one rig, secondary). Whether it supports Qwen3.8-27B's hybrid architecture on your build is untested here: compare it against `-sm layer` with `llama-bench` before relying on it.
 
 ```bash
 llama-server -hf ggml-org/Qwen3.8-27B-GGUF:Q8_0 -ngl 99 -fa on -sm layer -ts 1,1 -c 65536 --port 8080
 ```
 
-In vLLM, `--tensor-parallel-size 2` splits each layer across both cards. Without NVLink, vLLM's docs advise pipeline parallelism (`--pipeline-parallel-size 2`) instead.
+In vLLM, `--tensor-parallel-size 2` splits each layer across both cards. Without NVLink, vLLM's docs advise pipeline parallelism (`--pipeline-parallel-size 2`) for throughput when serving many users; for one person's speed, tensor parallelism over PCIe still helped in the test in "vLLM vs Ollama".
 
 What 48 GB unlocks:
 - **Qwen3.8-27B at Q8_0** (28.6 GB), with ~18 GB left for long context.
@@ -705,36 +776,77 @@ On Windows and Linux with an NVIDIA card, the field is wider. The table was chec
 > ⚠ **llama-server moved its default port.** It now listens on 127.0.0.1:9931, not 8080. Pass the port every time so your scripts don't break, for example `llama-server -m model.gguf --host 127.0.0.1 --port 8080`.
 
 <!-- section id="vllm" toc="vLLM vs Ollama" kicker="Part 1 · Run Qwen locally" -->
-## vLLM: why it beats Ollama for serving, and where it doesn't
+## vLLM vs Ollama: two GPUs, many requests, and what each one is
 
-[vLLM](https://docs.vllm.ai/) is a serving engine: a program built to answer many requests at once from one GPU box. Ollama is built to make one model easy to run for one person. Both serve the same OpenAI-style API, so a client written for one works with the other. The difference is what happens when several requests arrive together, and what happens when you have two GPUs.
+### First: what these programs are
 
-### Why it is faster under load
+Running a local model involves several layers, and most confusion comes from mixing them up:
+
+| Layer | What it does | Examples |
+|---|---|---|
+| Weights | The model itself: a file of billions of numbers | Qwen3.8-27B as GGUF, AWQ or safetensors |
+| Inference engine | The code that does the maths on your GPU, one token at a time | llama.cpp, vLLM, MLX, ExLlamaV3 |
+| Server and manager | Downloads and stores models, loads them, answers requests over HTTP | Ollama, LM Studio, `vllm serve`, `llama-server` |
+| API | The request format clients speak; nearly always OpenAI-compatible | `http://127.0.0.1:11434/v1` |
+| Front-end | A chat window | Open WebUI, LM Studio's chat |
+| Harness | A loop that gives a model tools and lets it act: read files, run commands, call itself again | Claude Code, Hermes |
+
+**Ollama is a server and manager around someone else's engine.** It's a program written in Go. It downloads models from its registry, much as Docker pulls images, stores them on disk, loads them with llama.cpp (and MLX on Apple Silicon since v0.40), and serves an API on port 11434. Its value is convenience: one install on any operating system, and `ollama run` just works.
+
+**vLLM is an engine and a server in one,** a Python program built for GPU servers. It was designed to answer many requests at once without wasting GPU memory, and to split one model across several GPUs. Neither one is a harness: they answer requests and never decide anything. An agent sits on top of either.
+
+### What changes with two GPUs
+
+Writing an answer one token at a time is limited by memory bandwidth: each new token means reading every weight once (see "What you're actually running"). So with two cards the question is whether both read their half at the same time.
+
+- **Ollama doesn't split the work.** Its FAQ: "If the model will entirely fit on any single GPU, Ollama will load the model on that GPU." Qwen3.8-27B at 4-bit is 19 GB, so on two 3090s it lands on one card and the other sits idle. A model too big for one card "will be spread across all the available GPUs" by layers. The cards then take turns, so you get the memory of two cards but the speed of one.
+- **vLLM's tensor parallelism** (`--tensor-parallel-size 2`) splits every layer in half, so both cards work on every token, then swap partial results. It's the method from Megatron-LM ([Shoeybi et al., 2019](https://arxiv.org/abs/1909.08053)). The cost is that exchange, which on 3090s without an NVLink bridge travels over PCIe.
+- **llama.cpp's `-sm tensor`** does the same thing, and is still marked experimental. Its older `-sm row` mode failed on CUDA with a split-buffer error in one recent test.
+
+Measured on two RTX 3090s with no NVLink, the cards talking through the CPU (October 2026; [computingforgeeks](https://computingforgeeks.com/build-dual-rtx-3090-llm/), one rig, secondary):
+
+| Model, 4-bit | Engine and mode | One 3090 | Two 3090s |
+|---|---|---|---|
+| Qwen3 32B | llama.cpp `-sm tensor`, one user | 35.3 t/s | 59.8 t/s (1.69×) |
+| Qwen3 32B | vLLM 0.31.0, tensor parallel 2, one user | 37.8 t/s | 57.4 t/s (1.52×) |
+| Qwen3 32B | vLLM, 8 users at once, total | 201.1 t/s | 290.8 t/s |
+| Llama 3.3 70B | llama.cpp default layer split, one user | doesn't fit | 19.5 t/s |
+| Llama 3.3 70B | llama.cpp `-sm tensor`, one user | doesn't fit | 31.9 t/s |
+| Llama 3.3 70B | vLLM, tensor parallel 2, one user | doesn't fit | 31.3 t/s |
+
+Taking turns or working together is the whole difference: 19.5 against about 31 on the same 70B. For one person, llama.cpp's tensor mode and vLLM were about level. vLLM pulls ahead as requests are added.
+
+> ◆ **NVLink matters less than its reputation.** vLLM's docs say GPUs without NVLink should use "pipeline parallelism instead of tensor parallelism for higher throughput" (`--pipeline-parallel-size 2`, which gives each card whole layers, as in [GPipe](https://arxiv.org/abs/1811.06965)). That advice is about total throughput when serving many users. For one person's speed, tensor parallelism over plain PCIe still gave 1.5–1.7× above. Pipeline mode can't speed up a single answer, since the cards still take turns. Try both on your own load.
+
+### Why vLLM is faster under load
 
 Every request needs its own KV cache, and the cache grows one token at a time. Older servers reserved one long block of memory per request, so most of it sat empty. vLLM's **PagedAttention** stores the cache in small pages, like an operating system's virtual memory, and hands them out as tokens arrive. Almost no memory is wasted, so many more requests fit at once. Its paper measured **2–4× the throughput** of the best servers of the time (FasterTransformer and Orca) at the same latency ([arXiv 2309.06180](https://arxiv.org/abs/2309.06180)).
 
 Three more features follow from that design:
 - **Continuous batching.** New requests join the running batch at every step instead of waiting for the batch to finish. The GPU stays busy, and one long answer doesn't hold up short ones.
 - **Prefix caching.** Requests that share a beginning, such as the same system prompt or the same retrieved document, reuse its KV cache instead of computing it again. It is on by default in v0.32.0. For agents and RAG this cuts the prefill wait you see before the first word.
-- **Tensor parallelism.** `--tensor-parallel-size 2` splits every layer across two GPUs, so both cards work on every token. Ollama does not do this. Its FAQ says it loads a model onto a single GPU if it fits, and otherwise spreads the layers across cards, which then take turns.
+- **Tensor parallelism** across GPUs, covered in "What changes with two GPUs" above.
 
 ### What the numbers say
 
 Red Hat tested both on one A100 40 GB with Llama 3.1 8B at 16-bit, from 1 to 256 concurrent users. vLLM peaked at **793 tokens per second** against Ollama's **41**, with P99 latency at peak of 80 ms against 673 ms ([Red Hat Developer, Aug 2025](https://developers.redhat.com/articles/2025/08/08/ollama-vs-vllm-deep-dive-performance-benchmarking)). That held even with Ollama tuned to `OLLAMA_NUM_PARALLEL=32`. Red Hat ships a vLLM-based product, so read it as a vendor benchmark. Independent blog tests agree on the direction but not the size of the gap, and several compare different precisions.
 
-**With one user, the gap mostly disappears.** Writing an answer one token at a time is limited by memory bandwidth, not by the engine, so both hit the same ceiling (see "What you're actually running"). One blog test put the two within about 15% of each other at one request ([aifoss via DEV](https://dev.to/jovan_chan_9500711396d4e6/ollama-vs-vllm-2026-56mf), secondary, unreplicated here). Ollama's `OLLAMA_NUM_PARALLEL` defaults to 1 (Ollama FAQ, checked 2026-11-03), and that, more than raw speed, is why its throughput stays flat as users are added.
+**With one user on one GPU, the gap mostly disappears.** Writing an answer one token at a time is limited by memory bandwidth, not by the engine, so both hit the same ceiling (see "What you're actually running"). One blog test put the two within about 15% of each other at one request ([aifoss via DEV](https://dev.to/jovan_chan_9500711396d4e6/ollama-vs-vllm-2026-56mf), secondary, unreplicated here). Ollama's `OLLAMA_NUM_PARALLEL` defaults to 1 (Ollama FAQ, checked 2026-11-03), and that, more than raw speed, is why its throughput stays flat as users are added.
+
+> 📝 **About the comparison tables going around.** A common summary says "Ollama for local development, vLLM for production," with 41 against 793 tokens per second and 673 against 80 ms latency. Those numbers are Red Hat's peak-load test above: one A100, an 8B model, up to 256 users at once. They're real, but the labels mislead. The question isn't development against production. It's how many requests arrive at once, and how many GPUs you have. One person on one GPU gets about the same speed from either. Two GPUs, or several agents at once, is where vLLM, or llama.cpp's tensor mode, earns its extra setup.
 
 ### Which to use
 
 | You have | Use | Why |
 |---|---|---|
-| One person, one model, any OS | Ollama | Simplest start, any quant size, a Mac or Windows natively; vLLM wouldn't be faster for you |
+| One person, one GPU, any OS | Ollama | Simplest start, any quant size, a Mac or Windows natively; vLLM wouldn't be faster for you |
 | A Mac | Ollama, LM Studio or `mlx-lm` | vLLM is NVIDIA-first; the Mac plugin is slower than llama.cpp (see "Faster and smaller") |
 | Several agents or people hitting one model | vLLM | Continuous batching and paged KV memory scale with the number of requests |
-| Two GPUs and one big model | vLLM with `--tensor-parallel-size 2`, or llama.cpp `-sm tensor` | Both cards work on every token |
+| Two GPUs, one person | llama.cpp `-sm tensor`, or vLLM with `--tensor-parallel-size 2` | Both cards work on every token: about 1.5–1.7× one card in the test above. Ollama would leave one card idle or make them take turns |
+| Two GPUs, agents or several people | vLLM with `--tensor-parallel-size 2` | Tensor parallelism plus batching and paged KV memory |
 | A model that only fits as a 2–3-bit GGUF | Ollama or llama.cpp | vLLM's GGUF support is an experimental plugin; it is built around AWQ, GPTQ and FP8 |
 
-**What vLLM costs you.** It is Linux only (Windows through WSL2). It needs compute capability 7.5 or newer, so an RTX 2000-series card or later; the 3090 is 8.6. It takes most of the GPU for itself: `--gpu-memory-utilization` defaults to 0.92, so nothing else should share that card. It starts slower, and it has more flags to get right.
+**What vLLM costs you.** It is Linux only (Windows through WSL2; see "Linux for local AI"). It needs compute capability 7.5 or newer, so an RTX 2000-series card or later; the 3090 is 8.6. It takes most of the GPU for itself: `--gpu-memory-utilization` defaults to 0.92, so nothing else should share that card. It starts slower, and it has more flags to get right.
 
 ### Qwen3.8-27B on two RTX 3090s with vLLM
 
@@ -745,7 +857,10 @@ On a 3090, vLLM can run 4-bit AWQ or GPTQ through its Marlin kernels, and FP8 ch
 - **FP8.** The official `Qwen/Qwen3.8-27B-FP8` is about 28.5 GB. It is closer to full quality and leaves about 15 GB for the cache once vLLM takes its 92%.
 
 ```bash
-pip install vllm                     # v0.32.0 is the latest stable release (2026-10-18); Linux or WSL2
+uv venv --python 3.12 --seed --managed-python   # vLLM's recommended install; Linux only
+source .venv/bin/activate
+uv pip install vllm --torch-backend=auto          # v0.33.0 is the latest release (2026-11-02)
+vllm download-kernels
 vllm serve cyankiwi/Qwen3.8-27B-AWQ-INT4 \
   --tensor-parallel-size 2 \
   --max-model-len 65536 \
@@ -2041,6 +2156,10 @@ Karpathy's Zero to Hero is the centre of this track. You write every piece of a 
 > ⚠ **nanoGPT is deprecated.** Karpathy marked [nanoGPT](https://github.com/karpathy/nanoGPT) deprecated in November 2025, and its README points to nanochat. Older tutorials still use it; the code runs, but new work happens in nanochat.
 
 > ◆ **LLM101n is a syllabus, not a course yet.** [karpathy/LLM101n](https://github.com/karpathy/LLM101n) ("Let's build a Storyteller") is a 17-chapter outline, from a bigram model to a deployed multimodal storyteller. Its README says the course "does not yet exist" and is being built by Eureka Labs, and the repo has been archived since 2024-08-01 with no lessons or code in it (checked 2026-11-03). Use it as a map: its first chapters (bigram, micrograd, MLP, attention, transformer, tokenization) are already covered by Zero to Hero, minbpe and build-nanogpt above, and nanochat covers the path through fine-tuning to a chat web app.
+
+### Linux and the command line (1–3 weeks, before Part 1 on a PC)
+
+If you'll run models on a PC, learn the basics of Linux first or alongside: free tutorials, MIT's Missing Semester, the Linux Foundation's 60-hour course and a command-line game are listed in [Linux for local AI](#linux).
 
 ### Track 3 · Run and serve (1–2 weeks, alongside Part 1)
 
