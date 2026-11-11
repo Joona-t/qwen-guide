@@ -229,6 +229,25 @@ main a { color: var(--accent); }
 .callout .ctag { font-family: var(--ui); font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
 .callout--gotcha .ctag { color: var(--accent); }
 .callout p { font-size: 16px; line-height: 1.65; color: var(--ink-soft); margin: 0; }
+.callout--check { border-left: 3px solid var(--accent); background: var(--paper-deep); padding: 12px 16px 12px 20px; }
+.callout--check .ctag::before { content: "✓ "; }
+.callout--goal { border-left: 3px solid var(--accent); padding-top: 2px; padding-bottom: 2px; margin: 0 0 22px; }
+.callout--goal p { font-size: 15px; }
+/* "Under the hood": the technical track, folded into the beginner stream */
+details.deep { margin: 26px 0; border: 1px solid var(--line-strong); background: var(--paper-deep); }
+details.deep > summary { cursor: pointer; list-style: none; padding: 12px 16px; min-height: 44px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;
+  font-family: var(--display); font-size: 17px; color: var(--ink); }
+details.deep > summary::-webkit-details-marker { display: none; }
+details.deep > summary::after { content: "+"; margin-left: auto; font-family: var(--ui); color: var(--muted); font-size: 20px; line-height: 1; }
+details.deep[open] > summary::after { content: "–"; }
+details.deep > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.deep-tag { font-family: var(--ui); font-size: 10.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.deep-body { padding: 4px 18px 10px; border-top: 1px solid var(--line); }
+.deep-toggle { display: block; width: 100%; margin: 0 0 14px; min-height: 36px; padding: 6px 10px; cursor: pointer; text-align: left;
+  background: transparent; border: 1px solid var(--line-strong); color: var(--ink-soft); font: 600 11px/1.3 var(--ui); letter-spacing: .08em; text-transform: uppercase; }
+.deep-toggle[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.toc-mobile .deep-toggle { margin: 0 18px 12px; width: calc(100% - 36px); }
+@media print { details.deep > .deep-body { display: block; } }
 
 /* tables */
 .tablewrap { overflow-x: auto; margin: 22px 0 30px; border-top: 1px solid var(--line-strong); }

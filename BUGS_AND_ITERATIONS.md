@@ -1,5 +1,29 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-11-11: ITER: Two tracks, part A: Start from zero, checkpoints and "Under the hood" blocks
+
+**Why:** Joona wants the guide deeply technical and also a bridge for non-technical readers (plan.md, two-track pass, research.md "two readers, one guide"). The research found:
+- A newcomer met a dozen undefined terms in the first table, with gaps of up to about 560 lines before each was explained.
+- The guide had one checkpoint in 2,500 lines and no zero-to-first-answer path.
+- There was no way to fold technical depth away.
+
+**Change:**
+- **Build:** `build.py` gains `<!-- deep title="…" -->…<!-- /deep -->` (rendered as a closed `<details class="deep">` tagged "Under the hood") and `✅ Checkpoint` / `🎯 You'll have` callouts. The rail and the mobile contents get "Open all Under the hood", remembered per viewer. CSS covers every theme.
+- **New section:** "Start from zero" opens Part 1, with two routes. One is LM Studio, with no terminal; its steps, requirements and proprietary licence come from LM Studio's docs and terms. The other is Ollama: how to open a terminal on Mac, Windows and Ubuntu, then the expected output. `pulling manifest`, `verifying sha256 digest`, `success`, `>>> Send a message (/? for help)` and `/bye` were confirmed in Ollama's source (cmd/interactive.go, server/images.go).
+- **Goals and checkpoints:** all 17 Part 1 sections get a goal line with a time estimate and a checkpoint that names an observable result.
+- **Deep blocks:** six existing deep subsections fold away (KV cache maths, quantization research, prefill against decode, the vLLM benchmark numbers, better-than-Q4_K_M quants, speculative decoding). Each ends with where to learn more: PagedAttention, Horace He's "Brrrr", the speculative-decoding paper (2211.17192), and the learning-path tracks.
+- **Router:** plain-words definitions sit above its table.
+- **Glossary:** 15 terms added (now 60 rows), and four stale glossary links fixed (Quantization → #quant, Hybrid attention → #tokens, Speculative decoding → #api, Chat template → #tokens).
+- **Checks:** `verify.mjs` now fails on an unbalanced deep block, a deep block that doesn't render, or a Part 1 section without its goal line and checkpoint. The checkpoint check failed on #run-basics before the content landed.
+
+**Verified:** `verify.mjs` PASS (453 checks, up from 389). In the browser:
+- the toggle opens and closes all 6 blocks;
+- 17 goal lines and 17 checkpoints render;
+- no broken anchors and no console errors;
+- no overflow at 1400 px (Basalt) or 360 px (Bubblegum, all blocks open).
+
+**Not done:** W1 (rig benchmarks) and W6-W11 (the measured Under-the-hood blocks). The rig's GPUs were held by another agent's vLLM run under `~/.gpu.lock`.
+
 ## 2026-11-11: ITER: Linux for local AI, and vLLM vs Ollama rebuilt around two GPUs
 
 **Why:** Joona asked for the guide to push Linux, and to make vLLM the clear pick for more than one consumer GPU. He runs Ubuntu on his two-RTX-3090 PC with a small Windows install for Windows-only work. He found a fresh Windows install more frustrating than Ubuntu, and Linux easier to work in with agents. He also pasted a common "Ollama for development, vLLM for production" comparison to check.

@@ -16,6 +16,8 @@ Each part ends with a **Learn more** list of the resources it was built from. Th
 
 Find your hardware, run the first model it lists, then read the sections in the last column. The memory rule tells you how much of your memory a model can really use. On a Mac, the system shares that memory, so keep about a quarter free. On a discrete GPU, the system has its own RAM, so keep about 1 GB of VRAM plus room for the KV cache, which grows with context length.
 
+New to these words? Start with [Start from zero](#start-zero) and come back. In short: **VRAM** is a graphics card's own memory. **Q4_K_M** is a common 4-bit compressed model file ([Quantization](#quant)). The **KV cache** is the working memory a conversation uses, and it grows with the conversation. An **MoE** (mixture-of-experts) model uses only part of its weights for each word. A **tensor split** makes two GPUs work on every word at once. Every term is also in the [Glossary](#glossary).
+
 | Your hardware | Memory rule | First model to run | Runtime | Read next |
 |---|---|---|---|---|
 | Mac, 16 GB | About 12 GB usable | `qwen3.5:4b` (3.3–4.0 GB), then `qwen3.5:9b` (6.6–7.6 GB) | Ollama | [Install Ollama](#install), [Which Qwen?](#models), [Tokens, context and the KV cache](#tokens) |
@@ -46,8 +48,48 @@ Or start from what you want to do:
 3. **Own what you ship.** A local model is yours: its privacy, its mistakes, and anything you removed from it.
 
 <!-- part title="Part 1 · Run Qwen locally" -->
+<!-- section id="start-zero" toc="Start from zero" kicker="Part 1 · Run Qwen locally" -->
+## Start from zero: your first local answer
+
+> 🎯 **You'll have:** a model answering you on your own computer, with no internet needed once it's downloaded · about 20 minutes, most of it downloading
+
+This section assumes nothing. If you've never opened a terminal, take Route A. If you're happy typing commands, take Route B: it's the one the rest of the guide builds on, and you can always do both.
+
+**What you need:** a computer from the last few years with at least 8 GB of memory (16 GB is more comfortable) and about 5 GB of free disk space.
+
+### Route A: no terminal, with LM Studio
+
+[LM Studio](https://lmstudio.ai/) is a desktop app with a chat window. It's proprietary, not open source; its terms license it for personal and internal business use. It needs a Mac with Apple Silicon (M1 or newer) on macOS 14 or newer, a Windows PC with AVX2 support, or Ubuntu 20.04 or newer.
+1. Download it from [lmstudio.ai/download](https://lmstudio.ai/download) and install it like any other app.
+2. Open the **Discover** tab, search for `Qwen3.5 4B`, and download it. It's about 3 GB.
+3. Open the **Chat** tab, open the model loader, pick the model, and wait for it to load.
+4. Type a question and press Enter.
+
+### Route B: the terminal, with Ollama
+
+A **terminal** is a window where you type commands instead of clicking. Open one:
+- **Mac:** press `Cmd+Space`, type `Terminal`, press Enter.
+- **Windows:** open the Start menu, type `PowerShell`, press Enter.
+- **Ubuntu:** press `Ctrl+Alt+T`.
+
+Then:
+1. **Install Ollama.** On a Mac or Windows, download it from [ollama.com/download](https://ollama.com/download) and open it. On Linux, paste `curl -fsSL https://ollama.com/install.sh | sh` into the terminal and press Enter.
+2. **Run a model.** Type this and press Enter:
+  ```bash
+  ollama run qwen3.5:4b
+  ```
+  The first time, Ollama downloads the model. You'll see `pulling manifest`, a progress bar for each part, then `verifying sha256 digest` and `success`.
+3. **Ask something.** When the prompt `>>> Send a message (/? for help)` appears, type a question and press Enter. This model thinks before it answers, so you may see its reasoning first; "Thinking mode" below shows how to turn that off.
+4. **Leave** by typing `/bye`.
+
+> 📝 **It works offline.** Once the model is downloaded, it runs with Wi-Fi off. Try it: that's the point of running locally.
+
+> ✅ **Checkpoint.** A model answered a question on your own machine. If the terminal says `ollama` isn't found, close and reopen it, or see [Troubleshooting](#trouble). Next, [What you're actually running](#run-basics) explains why the model fit, and [Pick your path](#start) says what to try on your hardware.
+
 <!-- section id="run-basics" toc="What a local model is" kicker="Part 1 · Run Qwen locally" -->
 ## What you're actually running
+
+> 🎯 **You'll have:** the three facts that decide what runs on your machine · about 5 min
 
 A language model is a file of numbers, called weights, plus a small program that uses them to predict the next token of text, one token at a time. Running it locally means that file sits on your disk and that program runs on your own CPU or GPU. Nothing leaves the machine unless you send it somewhere.
 
@@ -63,8 +105,12 @@ Three facts decide almost everything about running one well:
 
 <!-- widget:decode -->
 
+> ✅ **Checkpoint.** You can say how much memory your machine can give a model (unified memory on a Mac, VRAM on a PC) and estimate a 4-bit model's size: parameters in billions × 0.6 GB, so about 5.4 GB for a 9B.
+
 <!-- section id="use-case" toc="Local models and your use case" kicker="Part 1 · Run Qwen locally" -->
 ## Local models as a whole: is local right for your use case?
+
+> 🎯 **You'll have:** your use case in one sentence and a shortlist of models that fit your memory · about 15 min
 
 This guide is about Qwen, but the first decision is bigger than any one model family. Running a model locally is a trade. You give up the strongest models and the convenience of a hosted API. You get privacy, no per-token cost, no rate limits, offline use, and a system you fully control. Whether that trade is worth it depends on what you're doing.
 
@@ -141,8 +187,12 @@ There are more families than this, and new releases arrive weekly. Treat any tab
 
 > 📝 **Benchmarks are a starting point, not a verdict.** Public leaderboards measure general tasks on public data, and some have known defects. A model that scores five points higher on a benchmark can be worse on your inputs. Your own small test set outranks every leaderboard for your use case.
 
+> ✅ **Checkpoint.** Your use case is written in one sentence, and you have ten to thirty real test inputs with the answers you'd accept.
+
 <!-- section id="models" toc="Which Qwen" kicker="Part 1 · Run Qwen locally" -->
 ## Which Qwen?
+
+> 🎯 **You'll have:** the Qwen size and tag to pull first · about 5 min
 
 Qwen is Alibaba's family of open-weight models. Which line you want depends on your memory. For 8–16 GB, it is **Qwen3.5**, released in February and March 2026: its small models are **0.8B, 2B, 4B and 9B**, all Apache-2.0, taking text and images, with a 256K-token context window. The newer lines (Qwen3.6, Qwen3.8) only ship at 27B and larger. For a 24 GB GPU, two GPUs or a 32 GB+ Mac, the pick is **Qwen3.8-27B** (Aug 2026, 18 GB at 4-bit on Ollama, 19.0 GB as a Q4_K_M GGUF), the newest 27B as of 2026-11-03.
 
@@ -187,8 +237,12 @@ It thinks by default; see "Thinking mode" for its sampling presets and switches.
 
 **Other Qwen models you'll see.** `Qwen2.5-Coder` (7B, 14B, 32B) is older but still the best Qwen for editor autocomplete, since it supports fill-in-the-middle. `Qwen3-VL` is a vision line. `Qwen3-Embedding-0.6B` and `Qwen3-Reranker` are for search and retrieval. `Qwen3Guard` is a safety classifier. None of these are needed to get started.
 
+> ✅ **Checkpoint.** You know the exact tag you'll pull, for example `qwen3.5:9b`, and it fits your memory with room left for context.
+
 <!-- section id="huggingface" toc="Hugging Face" kicker="Part 1 · Run Qwen locally" -->
 ## Hugging Face: where the models live
+
+> 🎯 **You'll have:** how to read a model page and download a single file · about 10 min
 
 **What it is.** [Hugging Face](https://huggingface.co/) is a company and a website, usually called "the Hub." It hosts open model weights, datasets and demos the way GitHub hosts code. It also maintains the Python libraries most of the ecosystem is built on: `transformers` for running models, `datasets` for data, `peft` for LoRA adapters and `trl` for fine-tuning. When someone says "the model is on Hugging Face," they mean a Git-like repository on the Hub containing the weight files.
 
@@ -228,8 +282,12 @@ The part after the colon picks the quantization file from the repo; without it O
 
 **Licenses.** Qwen3.5's small models are Apache-2.0: you can use, modify and redistribute them, including commercially, if you keep the license notice. Other model families differ. Llama has its own community license. Gemma 4 and Meta's Muse Glimmer are Apache-2.0. Licenses diverge inside the Qwen3.8 line: the 27B is Apache-2.0, the 2.4T-A95B uses the Qwen3.8-Max License, and Qwen3.8-Flash-Next (about 180B total, mixture-of-experts) uses the Qwen Community License 1.0, which requires a separate licence for Model-as-a-Service and AI coding or office-assistant businesses. GLM-5.3, Kimi K3 and MiniMax-M3 ship under custom licenses rather than MIT. The model card tells you. Derivatives you publish inherit the base model's terms, so name the base model in your own card.
 
+> ✅ **Checkpoint.** `hf download Qwen/Qwen3.5-4B config.json` finishes and prints where it saved the file, and you can name a model's licence, publisher and file format from its page.
+
 <!-- section id="install" toc="Install Ollama" kicker="Part 1 · Run Qwen locally" -->
 ## Install Ollama and run your first Qwen
+
+> 🎯 **You'll have:** Ollama running and a Qwen model answering, with settings for your system · about 15 min plus the download
 
 [Ollama](https://ollama.com/) is the easiest runtime on all three platforms. It wraps llama.cpp (and, on Apple Silicon, Apple's MLX: a preview since v0.19 in March 2026, the default for supported models since v0.40.0 in September), serves a local HTTP API on port 11434, and manages model files for you.
 
@@ -329,8 +387,12 @@ If you stay on Windows, run Ollama natively. For a PC set up for local AI, this 
 
 > ◆ **Ollama's MLX runner on a 16 GB Mac is undocumented.** Since v0.40.0, Ollama runs supported models (Qwen3.5, Qwen3.6, Qwen3.8 and Gemma 4 included) on Apple's MLX by default. The March 2026 preview post said MLX wanted more than 32 GB of unified memory; the v0.40.0 release notes state no memory requirement. What a 16 GB Mac does is not documented. Check `ollama ps` and the server log to see which runner loaded, and compare speed against a `-q4_K_M` tag if in doubt.
 
+> ✅ **Checkpoint.** `ollama run qwen3.5:4b "Say hi"` answers, `curl -s http://127.0.0.1:11434/api/tags` lists the model, and `ollama ps` shows it loaded. If not, see the Run rows in [Troubleshooting](#trouble).
+
 <!-- section id="linux" toc="Linux for local AI" kicker="Part 1 · Run Qwen locally" -->
 ## Linux: the platform local AI is built on
+
+> 🎯 **You'll have:** Ubuntu with a working NVIDIA driver, and the commands you'll use · an afternoon
 
 If you're setting up a PC for local models, use Linux. You don't have to: Ollama, LM Studio and llama.cpp all run on Windows. But the tools in this guide are written for Linux first, and the more you grow into them, the more Windows gets in the way.
 
@@ -400,8 +462,12 @@ You don't need to learn Linux before you start. These cover most of what this gu
 | [The Linux Command Line](https://linuxcommand.org/tlcl.php) | William Shotts | Book | The shell in depth, from beginner to scripting | The book's page links a download from its SourceForge project |
 | [ArchWiki: NVIDIA](https://wiki.archlinux.org/title/NVIDIA) | Arch Linux community | Reference wiki | The best GPU-driver reference on any distribution, including Ubuntu | Free |
 
+> ✅ **Checkpoint.** `nvidia-smi` lists every GPU with its memory, and `systemctl status ollama` says `active (running)`.
+
 <!-- section id="nvidia-pc" toc="Running on an NVIDIA PC" kicker="Part 1 · Run Qwen locally" -->
 ## Running on an NVIDIA PC: from an RTX 3060 to an RTX 3090, and two of them
+
+> 🎯 **You'll have:** a model that fits your card, running fully on the GPU at a speed you measured · about 30 min
 
 On a PC, the GPU's own memory (VRAM) is the budget. A model that fits in VRAM runs fast. A model that spills into system RAM slows down sharply, because system RAM is several times slower. The RTX 3090 is the card this section centres on: 24 GB of VRAM and 936 GB/s (derived), the same capacity as a 4090.
 
@@ -451,11 +517,13 @@ The ceiling for decode is bandwidth ÷ model bytes. A 3090 reads 936 GB/s (deriv
 
 Decode also falls as the conversation grows, because every token reads the KV cache as well as the weights. On two 3090s, a 27B at Q6 ran ~22.8 t/s near empty context and 4.0 t/s at 95K tokens (sanj.dev, secondary). Measure at the context length you actually use.
 
-### Prefill versus decode
-
+<!-- deep title="Prefill versus decode" -->
 Generating a reply has two phases. **Prefill** reads your whole prompt at once and is limited by compute. **Decode** writes the answer one token at a time and is limited by bandwidth. Prefill is many times faster per token: a 70B on two 3090s did 393.9 t/s prefill against 16.29 t/s decode (XiongjieDai, May 2024, secondary).
 
 Prefill is what you feel in RAG. A query with 8,000 tokens of retrieved notes spends most of its wait in prefill before the first word appears. When you compare setups for RAG, look at the `pp` number from `llama-bench`, not only `tg`.
+
+*Want the full picture?* Horace He's [Making Deep Learning Go Brrrr](https://horace.io/brrr_intro.html) explains compute-bound against memory-bound work in one essay.
+<!-- /deep -->
 
 ### Driver floor
 
@@ -541,10 +609,12 @@ llama-server -hf unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q3_K_XL -ngl 99 --n-cpu-moe 20 
 - **Check the PSU.** NVIDIA asks for 750 W for the Founders Edition. Plan on 850 W or more for two cards (guidance).
 - **Plan for a second card.** If you may add one later, check that your board gives both slots Gen4 lanes and your case has room.
 
-> 📝 **Checkpoint.** `ollama ps` shows 100% GPU and you have a measured tok/s (see Benchmark your machine).
+> ✅ **Checkpoint.** `ollama ps` shows 100% GPU and you have a measured tok/s (see Benchmark your machine).
 
 <!-- section id="tokens" toc="Tokens, context and the KV cache" kicker="Part 1 · Run Qwen locally" -->
 ## Tokens, context and the KV cache
+
+> 🎯 **You'll have:** how to set the context length and estimate what it costs in memory · about 15 min
 
 A model never sees letters or words. It sees tokens: chunks of text from a fixed vocabulary, often a whole short word, sometimes a piece of a longer one, a space, or a punctuation mark. Everything is counted in tokens: how much you can send, how much it writes, and how much memory the conversation takes.
 
@@ -573,8 +643,7 @@ ollama run qwen-16k
 ```
 Or change the server-wide default with the `OLLAMA_CONTEXT_LENGTH` environment variable, for example `OLLAMA_CONTEXT_LENGTH=8192 ollama serve`. In llama.cpp the flag is `-c` (or `--ctx-size`).
 
-### How big the KV cache gets
-
+<!-- deep title="How big the KV cache gets" -->
 While it reads your prompt, the model stores a key and a value vector for every token in every attention layer, so it doesn't recompute them. That store is the KV cache. It grows linearly with context, and it sits in memory next to the weights. The formula:
 
 ```text
@@ -596,6 +665,9 @@ The 2 is one key plus one value. `layers` counts only the layers that keep a cac
 
 > ◆ **The constants are per model.** The 64 KiB figure is verified for Qwen3.6-27B and Qwen3.8-27B, which share a config. Read `num_hidden_layers`, `num_key_value_heads`, `head_dim` and the layer layout from the model's `config.json` before you trust the formula for another model. Runtimes also add some fixed buffers on top, so leave headroom.
 
+*Want the full picture?* The [PagedAttention paper](https://arxiv.org/abs/2309.06180) explains how servers manage this cache, and Track 2 in the [free learning path](#learn-path) builds attention from scratch.
+<!-- /deep -->
+
 ### Chat templates
 
 A chat model was trained on conversations laid out in one exact format: special tokens that mark where the system prompt, each user turn and each assistant turn start and stop, plus the switch for thinking mode. The chat template turns your list of messages into that one long string. You rarely see it, because the runtime applies it for you.
@@ -604,8 +676,12 @@ A mismatched template breaks output in quiet ways. The model sees markers it was
 
 GGUF files carry the template with them, in the `tokenizer.chat_template` metadata field, which the GGUF spec describes as a Jinja template. Ollama and llama.cpp read it from there, so a GGUF from the official or a trusted uploader just works. Override it only when you know the file's template is wrong, and treat a template from an unknown source as code (see "Poisoned chat templates" in Part 2).
 
+> ✅ **Checkpoint.** You set a context length, per request with `num_ctx` or in a Modelfile, and the CONTEXT column of `ollama ps` shows it.
+
 <!-- section id="quant" toc="Quantization" kicker="Part 1 · Run Qwen locally" -->
 ## Quantization, from first principles
+
+> 🎯 **You'll have:** how to pick a quantization for your memory, and how to measure what it costs · about 20 min
 
 Every number in a model is a **weight**, and Qwen3.8-27B has 27.78 billion of them. Trained models store each weight in 16 bits (bf16), so the 27B is 53.8 GB as a BF16 GGUF. That is more than two 3090s hold. Quantization stores each weight in fewer bits, with a little extra data to undo the rounding. It is the reason a 27B fits on one 24 GB card at all.
 
@@ -624,8 +700,7 @@ File sizes are from the ggml-org and Unsloth GGUF repos (checked 2026-11-03). Bi
 
 **Why "4-bit" is 5.5 bits here.** Weights are rounded in blocks. In llama.cpp's Q4_K, each block of 32 weights shares a scale and a minimum, stored in 6 bits, inside super-blocks of 256. The 4-bit values plus that bookkeeping cost **4.5 bits per weight** (the format's own definition in `ggml-common.h`). Q4_K_M then keeps some of the most sensitive tensors (parts of the attention-value and feed-forward-down projections) at 5- or 6-bit (`llama-quant.cpp`), and small tensors such as the norms stay at full precision. The average lands near 5.5.
 
-### What the research says
-
+<!-- deep title="What the research says" -->
 | Finding | Source | Strength |
 |---|---|---|
 | At the same total memory, a bigger model at 4-bit beats a smaller model at 8-bit. 4-bit was "almost universally optimal" across 35,000 experiments from 19M to 176B parameters. Only small block sizes and the choice of data type improved on it. | Dettmers & Zettlemoyer, [arXiv 2212.09720](https://arxiv.org/abs/2212.09720) (2022) | Strong, but older model families and zero-shot tasks only |
@@ -636,6 +711,9 @@ File sizes are from the ggml-org and Unsloth GGUF repos (checked 2026-11-03). Bi
 **Where they agree:** 8-bit is lossless. A good 4-bit (Q4_K_M, AWQ, GPTQ) is close to lossless for chat and reasoning. Below 4 bits the loss climbs steeply.
 
 **What nobody has tested yet:** Unsloth's per-layer "dynamic" GGUFs against AWQ and GPTQ on the same hybrid Qwen3.8 model, and 2–3-bit 27Bs against 4-bit 9Bs on agent tasks. Measure those yourself (below).
+
+*Want the full picture?* Track 3 in the [free learning path](#learn-path) includes Maxime Labonne's quantization notebooks, and [Papers worth reading](#papers) lists the papers with prompts for an agent.
+<!-- /deep -->
 
 ### Bigger model at lower bits, or smaller at higher bits?
 
@@ -679,8 +757,12 @@ The Apple column is derived: the GPU-only formats run on CUDA engines, which don
 
 **The KV cache is quantized separately.** Everything above is about the weights. The cache can be stored in 8-bit as well (`q8_0`), which halves it at very little loss; see "Tokens, context and the KV cache" and "Faster and smaller".
 
+> ✅ **Checkpoint.** You can work out the bits per weight of the file you run (file size in GB × 8 ÷ parameters in billions; about 5.5 for Qwen3.8-27B's 19.0 GB Q4_K_M), and you know the `llama-perplexity --kl-divergence` command that measures its loss.
+
 <!-- section id="thinking" toc="Thinking mode" kicker="Part 1 · Run Qwen locally" -->
 ## Thinking mode
+
+> 🎯 **You'll have:** thinking switched on or off on purpose, with sampling set for your task · about 10 min
 
 Qwen3.5 4B and 9B, and Qwen3.8-27B, reason out loud in a `<think>` block before answering. It helps with maths, planning and tricky instructions. It costs time, and a long reasoning trace can run into the output-token limit, so raise that limit when thinking is on. For extraction, classification, chat and tool calls, turn it off.
 
@@ -749,8 +831,12 @@ resp = client.chat.completions.create(
 
 Keep sampling fixed while you compare models or evaluate a fine-tune. Changing it changes the result as much as changing the model can.
 
+> ✅ **Checkpoint.** Asked the same question, `ollama run qwen3.5:4b --think=false` answers with no thinking block, and without the flag it thinks first.
+
 <!-- section id="runtimes" toc="Other runtimes" kicker="Part 1 · Run Qwen locally" -->
 ## Other runtimes, and when to pick them
+
+> 🎯 **You'll have:** which runtime to move to after Ollama, and why · about 5 min
 
 - **[LM Studio](https://lmstudio.ai/)** is a desktop app with a model browser, a chat window and an OpenAI-compatible server. On a Mac it can run both llama.cpp and MLX engines and supports speculative decoding. The best choice if you'd rather click than type.
 - **[llama.cpp](https://github.com/ggml-org/llama.cpp)** is the C++ engine underneath Ollama and LM Studio. Use it directly when you need every option: exact GPU layer offload when a model barely fits, a reranking endpoint, or the latest model support before the apps catch up. `llama-server` gives you an OpenAI-compatible API.
@@ -775,8 +861,12 @@ On Windows and Linux with an NVIDIA card, the field is wider. The table was chec
 
 > ⚠ **llama-server moved its default port.** It now listens on 127.0.0.1:9931, not 8080. Pass the port every time so your scripts don't break, for example `llama-server -m model.gguf --host 127.0.0.1 --port 8080`.
 
+> ✅ **Checkpoint.** You can name the runtime you'd move to next and why: LM Studio for a window instead of a terminal, llama.cpp for control, `mlx-lm` on a Mac, vLLM for two GPUs or many requests.
+
 <!-- section id="vllm" toc="vLLM vs Ollama" kicker="Part 1 · Run Qwen locally" -->
 ## vLLM vs Ollama: two GPUs, many requests, and what each one is
+
+> 🎯 **You'll have:** when Ollama is enough, when two GPUs or many requests call for vLLM, and a two-GPU server · about 20 min to read, longer to set up
 
 ### First: what these programs are
 
@@ -827,13 +917,15 @@ Three more features follow from that design:
 - **Prefix caching.** Requests that share a beginning, such as the same system prompt or the same retrieved document, reuse its KV cache instead of computing it again. It is on by default in v0.32.0. For agents and RAG this cuts the prefill wait you see before the first word.
 - **Tensor parallelism** across GPUs, covered in "What changes with two GPUs" above.
 
-### What the numbers say
-
+<!-- deep title="What the numbers say" -->
 Red Hat tested both on one A100 40 GB with Llama 3.1 8B at 16-bit, from 1 to 256 concurrent users. vLLM peaked at **793 tokens per second** against Ollama's **41**, with P99 latency at peak of 80 ms against 673 ms ([Red Hat Developer, Aug 2025](https://developers.redhat.com/articles/2025/08/08/ollama-vs-vllm-deep-dive-performance-benchmarking)). That held even with Ollama tuned to `OLLAMA_NUM_PARALLEL=32`. Red Hat ships a vLLM-based product, so read it as a vendor benchmark. Independent blog tests agree on the direction but not the size of the gap, and several compare different precisions.
 
 **With one user on one GPU, the gap mostly disappears.** Writing an answer one token at a time is limited by memory bandwidth, not by the engine, so both hit the same ceiling (see "What you're actually running"). One blog test put the two within about 15% of each other at one request ([aifoss via DEV](https://dev.to/jovan_chan_9500711396d4e6/ollama-vs-vllm-2026-56mf), secondary, unreplicated here). Ollama's `OLLAMA_NUM_PARALLEL` defaults to 1 (Ollama FAQ, checked 2026-11-03), and that, more than raw speed, is why its throughput stays flat as users are added.
 
 > 📝 **About the comparison tables going around.** A common summary says "Ollama for local development, vLLM for production," with 41 against 793 tokens per second and 673 against 80 ms latency. Those numbers are Red Hat's peak-load test above: one A100, an 8B model, up to 256 users at once. They're real, but the labels mislead. The question isn't development against production. It's how many requests arrive at once, and how many GPUs you have. One person on one GPU gets about the same speed from either. Two GPUs, or several agents at once, is where vLLM, or llama.cpp's tensor mode, earns its extra setup.
+
+*Want the full picture?* The [PagedAttention paper](https://arxiv.org/abs/2309.06180) is the design behind these numbers.
+<!-- /deep -->
 
 ### Which to use
 
@@ -877,8 +969,12 @@ vllm serve cyankiwi/Qwen3.8-27B-AWQ-INT4 \
 
 Point any OpenAI client at `http://127.0.0.1:8000/v1`. Measure with several requests at once, since that is where vLLM pays off: `vllm bench serve` sends concurrent requests and reports throughput and latency.
 
+> ✅ **Checkpoint.** `curl -s http://127.0.0.1:8000/v1/models -H "Authorization: Bearer $VLLM_API_KEY"` lists your model, and `nvidia-smi` shows memory in use on both cards.
+
 <!-- section id="faster" toc="Faster and smaller" kicker="Part 1 · Run Qwen locally" -->
 ## Faster and smaller: engines and quantization
+
+> 🎯 **You'll have:** the faster engine and the better quant for your machine · about 10 min
 
 Once a model runs, two levers decide how well: which engine runs it, and how its weights are stored.
 
@@ -897,8 +993,7 @@ For the 4B and 9B class, `mlx-lm` is the measured decode-speed leader on Apple S
 
 **vLLM on a Mac exists, but not for you.** The community `vllm-metal` plugin runs vLLM on Apple Silicon, but it is about 1.2× *slower* than llama.cpp for a single user. It exists for batching and API parity on a serving box. The common 2026 pattern: develop locally with llama.cpp or `mlx-lm`, run heavy work on a Linux GPU machine serving vLLM, and keep the OpenAI-compatible endpoint the same so clients don't change. `vllm-metal` and Docker Model Runner both expose OpenAI- *and* Anthropic-compatible APIs.
 
-### Better than Q4_K_M at the same size
-
+<!-- deep title="Better than Q4_K_M at the same size" -->
 `Q4_K_M` is a safe floor, not the best you can do at four bits:
 
 - **Unsloth Dynamic 2.0 GGUFs** start from an importance matrix and pick the best quant type *per layer*. Same file size and RAM as Q4_K_M, measurably higher fidelity: lower KL divergence than plain imatrix and QAT quants across Qwen3.5, Gemma 3 and Llama 4, closing about a third of the Q4_K_M to Q5_K_M gap for free. On a 16 GB machine where you can't climb a bit level, pull the `unsloth/…-GGUF` Dynamic build instead of a generic Q4_K_M.
@@ -911,8 +1006,15 @@ For the 4B and 9B class, `mlx-lm` is the measured decode-speed leader on Apple S
 
 **Where QAT and ternary fit.** Quantization-aware training ships 4-bit, even 2-bit, checkpoints with near-bf16 quality; Gemma's QAT releases are the standout. Qwen3.5 does **not** ship a QAT checkpoint: it ships official GPTQ-Int4, FP8 and NVFP4, and AWQ for Qwen3.5 exists only as community quants. **BitNet b1.58** ternary weights are real at 2B (BitNet-b1.58-2B4T matches full-precision 2–3B models at about 0.4 GB, [arXiv 2504.12285](https://arxiv.org/abs/2504.12285)), but there is still no 7–9B ternary model that competes with a quantized Qwen3.5-9B.
 
+*Want the full picture?* "Quantization, from first principles" above covers the theory, and Track 3 in the [free learning path](#learn-path) shows how these files are made.
+<!-- /deep -->
+
+> ✅ **Checkpoint.** You compared two runs, two engines or two quants, with `--verbose` or `llama-bench`, and kept the faster one that still gets your test prompts right.
+
 <!-- section id="bench" toc="Benchmark your machine" kicker="Part 1 · Run Qwen locally" -->
 ## Benchmark your machine
+
+> 🎯 **You'll have:** your own measured prompt and generation speed · about 10 min
 
 Every speed in this guide is either a cited measurement or an estimate. Your machine is the only one that counts, and measuring it takes five minutes. You want two numbers: how fast the model reads your prompt (prompt processing, or prefill) and how fast it writes the answer (generation, or decode).
 
@@ -1001,8 +1103,12 @@ The reference row is from the llama.cpp CUDA scoreboard (github.com/ggml-org/lla
 
 > ◆ **Nobody we trust has measured these on a 3090 yet.** For gpt-oss-20b, Gemma 4 31B, GLM-4.7-Flash, Qwen3-Coder-30B-A3B and Muse Glimmer 30B, no source in this guide's evidence base has a measured RTX 3090 generation speed. The figures elsewhere are ceilings derived from bandwidth divided by model size (about 51 tok/s for Gemma 4 31B and 52 for Muse Glimmer at Q4, derived), and real speeds land below them. The nearest measurements are community reports, single contributors and secondary: Qwen3.6-27B at Q3_K_XL ran 32–38 tok/s, and Qwen3.6-35B-A3B ran 136.8 tok/s at 370 W. Your llama-bench row is how this gap gets filled.
 
+> ✅ **Checkpoint.** Your results table has a filled row: model, quant, context, prompt eval rate and eval rate.
+
 <!-- section id="api" toc="Use it from code" kicker="Part 1 · Run Qwen locally" -->
 ## Use it from your own code
+
+> 🎯 **You'll have:** a model answering from your own code, with JSON output and tool calls · about 30 min
 
 Every runtime above speaks the OpenAI chat-completions format, so any client library works by changing the base URL. With Ollama running:
 ```bash
@@ -1150,8 +1256,7 @@ Replace the two toy cases with ten to thirty real inputs from your work, and mak
 
 > 📝 **Part 3 reuses this harness.** The fine-tuning eval in "Evaluate honestly" is the same loop with your base model and your fine-tuned model as the two entries in `MODELS`.
 
-### Speculative decoding on a GPU
-
+<!-- deep title="Speculative decoding on a GPU" -->
 The Mac section above covers speculative decoding in LM Studio and `mlx-lm`. On an NVIDIA card, llama-server does it with a small draft model from the same family, so the two share a tokenizer. On a 24 GB card both fit easily:
 
 ```bash
@@ -1170,8 +1275,15 @@ Flags checked against the llama-server README on 2026-11-03 (llama.cpp v0.8.0). 
 
 > ◆ **Measure the gain, don't assume it.** Speedups depend on how often the target accepts the draft's tokens, which depends on the task. Run the same prompts with and without `-md` and compare generation tok/s, as in "Benchmark your machine". If it is not faster, drop it.
 
+*Want the full picture?* Leviathan et al., [Fast Inference from Transformers via Speculative Decoding](https://arxiv.org/abs/2211.17192), proves why the output stays the same while the speed goes up.
+<!-- /deep -->
+
+> ✅ **Checkpoint.** The `/v1/chat/completions` request returns a reply, and the structured-output example returns JSON that matches its schema.
+
 <!-- section id="safe-run" toc="Keep it safe" kicker="Part 1 · Run Qwen locally" -->
 ## Keep it on your machine
+
+> 🎯 **You'll have:** a local server that only your machine can reach · about 5 min
 
 Local inference is private by default. Keep it that way:
 
@@ -1180,6 +1292,8 @@ Local inference is private by default. Keep it that way:
 - **Pull from accounts you trust.** A model file is input to a parser you run with your own permissions. Prefer the official library and known publishers; prefer safetensors and GGUF over pickle formats.
 - **Treat model output as untrusted text.** If you wire a model to tools that can run commands, read files or send messages, put the approval step in your code, not in the prompt. A model can be talked into anything; your validator can't.
 - **Reaching it from another machine** is fine over a VPN or mesh such as Tailscale, bound to that interface, with a firewall rule. Never expose port 11434 directly.
+
+> ✅ **Checkpoint.** On this machine `curl -s http://127.0.0.1:11434/api/tags` works, and from another device on your network the same request to this machine's address fails to connect.
 
 <!-- section id="learn-run" toc="Learn more" kicker="Part 1 · Run Qwen locally" -->
 ## Learn more: running models
@@ -2428,9 +2542,12 @@ Plain-English meanings for the terms this guide uses. Linked terms jump to the s
 |---|---|
 | [A3B (active parameters)](#models) | In a name like 30B-A3B, the model holds 30B parameters but uses only about 3B for each token. Memory follows the total; speed follows the active count. |
 | [Abliteration](#abl-what) | Editing a model's weights so it can no longer express the internal "refusal direction" that makes it decline requests. |
+| [All-reduce](#vllm) | A step where every GPU shares its partial result and each ends up with the total. Tensor parallelism runs two per layer, and that traffic is what the link between the cards carries. |
 | BF16 | A 16-bit number format (bfloat16) used for full-precision weights. Two bytes per parameter. |
-| [Chat template](#ship) | The exact wrapper of role markers and special tokens a model expects around each message. A mismatch causes gibberish or endless output. |
+| [bpw (bits per weight)](#quant) | The average number of bits each weight takes in a model file: file size in bytes × 8 ÷ parameter count. Qwen3.8-27B's 19.0 GB Q4_K_M file is about 5.5 bpw. |
+| [Chat template](#tokens) | The exact wrapper of role markers and special tokens a model expects around each message. A mismatch causes gibberish or endless output. |
 | Context window | The most tokens a model can see at once, prompt plus answer. Ollama calls it `num_ctx` and accepts it per request. |
+| [Continuous batching](#vllm) | Adding new requests to the running batch at every generated token, instead of waiting for the batch to finish. Why a server like vLLM stays busy under load. |
 | [CUDA](#install) | NVIDIA's GPU computing platform. A runtime needs a CUDA build and a recent enough driver to use an NVIDIA card. |
 | Decode | The phase that writes the answer one token at a time. Its speed is limited mostly by memory bandwidth. |
 | [DPO](#beyond) | Direct Preference Optimization. Trains on pairs of better and worse answers, with no separate reward model. |
@@ -2444,27 +2561,39 @@ Plain-English meanings for the terms this guide uses. Linked terms jump to the s
 | [GGUF](#huggingface) | The single-file model format used by llama.cpp, Ollama and LM Studio. It holds quantized weights plus metadata. |
 | GQA | Grouped-query attention. Several query heads share one key/value head, which shrinks the KV cache. |
 | [GRPO](#beyond) | Group Relative Policy Optimization. A reinforcement-learning method that scores a group of sampled answers against each other. |
-| [Hybrid attention](#mac) | Mixing layer types. In Qwen3.5, Qwen3.6 and Qwen3.8, three of every four layers are Gated DeltaNet (linear attention) and one is normal attention; only the normal layers keep a growing KV cache. |
+| [Hugging Face](#huggingface) | The website, "the Hub", that hosts open model weights and datasets, and the company behind the `transformers`, PEFT and TRL libraries. |
+| [Hybrid attention](#tokens) | Mixing layer types. In Qwen3.5, Qwen3.6 and Qwen3.8, three of every four layers are Gated DeltaNet (linear attention) and one is normal attention; only the normal layers keep a growing KV cache. |
+| [imatrix (importance matrix)](#quant) | Statistics from running sample text through a model, used while quantizing to keep the weights that matter most more precise. |
+| [KLD (KL divergence)](#quant) | How far a quantized model's next-token probabilities drift from the original's, averaged over sample text. Lower is closer; 0 means identical. `llama-perplexity --kl-divergence` measures it. |
 | KV cache | Memory that stores the keys and values of every token so far, so the model doesn't recompute them. It grows with context length. |
+| [llama.cpp](#runtimes) | The open-source C/C++ engine that runs GGUF models on CPUs and GPUs. Ollama and LM Studio are built on it. |
 | [LoRA](#lora) | Training small low-rank adapter matrices beside the frozen weights instead of changing every weight. |
 | [MCP](#shared-memory) | Model Context Protocol. A standard way for an agent to call tools and servers, such as a shared memory store. |
 | Mixture-of-experts (MoE) | A model built from many expert sub-networks, with a router that picks a few of them for each token. See A3B. |
 | [MLX](#mac) | Apple's machine-learning framework for Apple Silicon. `mlx-lm` runs and fine-tunes language models on it. |
 | mmproj | A separate GGUF file that holds a vision model's image projector. llama.cpp loads it beside the main GGUF to read images. |
+| [MTP (multi-token prediction)](#api) | Extra heads trained with a model to guess several tokens ahead. Used as a built-in draft for speculative decoding. |
 | NVFP4 | NVIDIA's 4-bit floating-point format. Only Blackwell (5090) has native FP4 tensor cores; older cards use slower fallback kernels. |
 | NVLink | A direct bridge between two GPUs. The 3090 and 3090 Ti have it; the 4090 and 5090 don't. Its benefit for llama.cpp's layer split is UNCERTAIN. |
 | Offload | Keeping some layers in system RAM when the model doesn't fit in VRAM. `ollama ps` shows the split; it is much slower. |
+| [Ollama](#install) | A server and model manager: it downloads models, runs them with llama.cpp (and MLX on Apple Silicon), and answers on a local API at port 11434. |
+| [PagedAttention](#vllm) | vLLM's way of storing the KV cache in small fixed-size pages, like an operating system's virtual memory, so little memory is wasted and more requests fit. |
+| [PCIe](#nvidia-pc) | The slot and link that connect a GPU to the motherboard. Between two consumer GPUs without NVLink, it carries all their traffic. |
+| [Perplexity](#quant) | How surprised a model is by sample text, measured from its own predictions. Lower is better. Used with KLD to measure what quantization costs. |
+| [Pipeline parallel](#vllm) | Splitting a model across GPUs by whole layers, so each card runs its block in turn. It raises throughput with many requests, not the speed of one answer. |
 | Prefill | The phase that reads the whole prompt before the first output token. Long prompts make it the slow part. |
+| [Prefix caching](#vllm) | Keeping the KV cache for a prompt's shared beginning, such as a system prompt, so the next request skips recomputing it. |
 | [QLoRA](#lora) | LoRA on top of a 4-bit quantized base model, to cut training memory. Unsloth doesn't recommend it for Qwen3.5. |
-| [Quantization](#faster) | Storing weights in fewer bits, such as 4-bit, to cut memory and speed up decode at some cost in quality. Q4_K_M is a common GGUF 4-bit type. |
+| [Quantization](#quant) | Storing weights in fewer bits, such as 4-bit, to cut memory and speed up decode at some cost in quality. Q4_K_M is a common GGUF 4-bit type. |
 | [RAG](#rag) | Retrieval-augmented generation. Search your own documents, then hand the best passages to the model with the question. |
 | [Reranker](#embed) | A model that scores each query and document pair to reorder search results more precisely than vector search. |
 | [ROCm](#install) | AMD's GPU computing platform. Ollama needs the ROCm v7 driver on Linux. |
 | [safetensors](#huggingface) | The standard file format for full-precision weights. Unlike `.bin` or `.pt` pickle files, it can't run code when opened. |
 | [Sampling](#thinking) | How the next token is picked from the model's probabilities: temperature, top_p, top_k, min_p and presence_penalty. |
 | [SFT](#basics) | Supervised fine-tuning. Training on example inputs paired with the answers you want. |
-| [Speculative decoding](#faster) | A small draft model proposes several tokens and the big model checks them in one pass, which raises throughput. |
+| [Speculative decoding](#api) | A small draft model proposes several tokens and the big model checks them in one pass, which raises throughput. |
 | Tensor parallel | Splitting each layer's maths across GPUs so they work at the same time, as in vLLM's `--tensor-parallel-size 2`. llama.cpp's default layer split instead gives each GPU whole layers. |
+| [Terminal](#start-zero) | A window where you type commands instead of clicking: Terminal on a Mac, PowerShell on Windows, the Terminal app on Ubuntu. |
 | [Thinking mode](#thinking) | Qwen3.5 reasoning in a `<think>` block before it answers. Better on hard problems, slower everywhere. |
 | tok/s | Tokens per second. Benchmarks report prefill (pp) and decode (tg) speeds separately. |
 | Token | The unit a model reads and writes, often a piece of a word. Context, speed and price are all counted in tokens. |
