@@ -1,3 +1,96 @@
+# Plan: one guide, two tracks: deeper for technical readers, easier for newcomers (2026-11-11)
+
+> **Status:** PROPOSED, not implementing yet. It waits for Joona's annotations and "implement it all". Evidence: `research.md` top section, "Research: two readers, one guide (checked 2026-11-11)", cited below as §I-§IV.
+
+## 1. Goal
+
+Joona, 2026-11-11: *"We want to start getting deeply technical and catering towards technical people, and not only technical people, we want to also help bridge the gap between non-technical people and give them the tools and information they need so that they can go out there and acquire this knowledge."*
+
+This pass delivers three things:
+- **For the technical reader:** our own measured numbers from the two-3090 Ubuntu rig, and the mechanisms behind them (roofline, attention kernels, all-reduce, speculative acceptance, quantization error), each with a profiler they can run themselves.
+- **For the newcomer:** a path from "I have a computer" to "a local model answered me" that assumes nothing, plus a checkpoint at the end of every Part 1 section.
+- **For both:** the same sections, not two documents. Detail they don't need yet folds away, so neither reader wades through the other's material.
+
+**Frontier references** (§IV):
+- **Technical:** *How To Scale Your Model* (inference chapter), the *Ultra-Scale Playbook*, and *Making Deep Learning Go Brrrr*. None of them is measured on consumer Ampere cards with a hybrid-attention 27B.
+- **Beginner:** Ollama's quickstart and LM Studio's onboarding.
+
+**Concrete acceptance criteria** are in §5.
+
+## 2. The structure: one stream, two depths
+
+```
+Section (unchanged order)
+ ├─ Goal line          "You'll have: … · about N min"            ← newcomer
+ ├─ Main text          plain words, first-use definitions        ← both
+ ├─ ▸ Under the hood   <details>, closed by default              ← technical
+ │    mechanism · derivation · profiler walkthrough · our bench rows
+ └─ ✅ Checkpoint       "You should now see X. If Y → Troubleshooting"
+```
+
+- **Beginner track:** the main text with every Under-the-hood block closed. It is about the guide as it reads today, minus the asides that currently interrupt it, which move into blocks.
+- **Under-the-hood track:** open the blocks. A "Show all Under the hood" toggle in the rail opens every block at once for readers who want the deep version. It is per viewer, stored in `localStorage` with try/catch, like the theme choice.
+- **Why not two documents:** two copies drift, and the freshness check (`scripts/freshness.py`) and `verify.mjs` only guard one source. The `<details>` blocks keep one source of truth (§III).
+
+## 3. Work packages
+
+Effort is in focused sessions: S ≈ under 1, M ≈ 1-2, L ≈ 3+. Priority: P0 ships first and unblocks others. P1 is the core of the pass. P2 is worth it if time allows.
+
+| # | Work package | What changes | Evidence | Effort | Priority |
+|---|---|---|---|---|---|
+| **W1** | **Rig bench harness + first measured rows** | `scripts/bench_rig.sh` (runs on the Ubuntu 2×3090 box) runs a fixed matrix and writes `bench/2026-11-DD-*.jsonl` with llama.cpp build hash, vLLM version, driver, power cap, PCIe link width/gen (`nvidia-smi -q`), and RAM. The matrix: (a) `llama-bench` Qwen3.8-27B at Q4_K_M, UD-Q4_K_XL, Q6_K and Q8_0; `-sm layer` against `-sm tensor`; `-d 0,32768,131072`. (b) `vllm bench serve` with AWQ-INT4, TP=2 against PP=2, concurrency 1/4/16. (c) MTP on/off for both engines. (d) Power-cap sweep 350→220 W. Every 3090 claim the guide marks "ceiling", "secondary" or "untested here" gets our row beside it. Our row does not replace the cited one; the ceiling stays as the explanation. | §I1 | L (mostly wall-clock on the rig) | **P0** |
+| **W2** | **Build support for two depths** | `build.py`: a `<!-- deep title="…" -->…<!-- /deep -->` marker renders `<details class="deep">`, and a `✅` callout tag renders a checkpoint. A rail toggle opens or closes every deep block. CSS for both across all themes. `verify.mjs` asserts: deep blocks balanced, every Part 1 section has a checkpoint, and every internal `#anchor` (glossary included) resolves to a real section id. | §II4, §III, §I7 | M | **P0** |
+| **W3** | **"Start from zero" path** | A new short section before "What you're actually running": what a terminal is and how to open it on Mac, Windows and Ubuntu; the no-terminal route (LM Studio download → search Qwen3.5-4B → chat); then the Ollama route with the *expected output* shown after each command. Ends with "✅ You'll have: a model answering you, on your machine, offline." Move the "Pick your path" table *after* the four-paragraph "What you're actually running" explainer, or give it a plain-words column. | §II1, §II3 | M | **P0** |
+| **W4** | **Define-on-first-use pass + glossary upgrade** | Every term in the §II1 table gets a one-clause definition where it first appears, linked to the glossary. Add the about 15 missing glossary terms (bpw, KLD, perplexity, PagedAttention, continuous batching, prefix caching, MTP, imatrix, pipeline parallel, all-reduce, PCIe, terminal, llama.cpp, Ollama, Hugging Face). Fix the three stale glossary anchors. | §II1, §I7 | M | P1 |
+| **W5** | **Checkpoints and goal lines for Part 1** | Each of the Part 1 sections opens with "You'll have: … · about N min" and closes with a ✅ Checkpoint naming the observable result (a command's output, an `ollama ps` line, a tok/s number) and the Troubleshooting row to read if it fails. W2's verify check enforces it. | §II2 | M | P1 |
+| **W6** | **Under the hood: the roofline** | A deep block in "Prefill versus decode". It covers arithmetic intensity, the 3090 ridge point (GA102 peak from NVIDIA's whitepaper, cited), and why batch-1 decode is bandwidth-bound and prefill compute-bound. It is checked against our W1 pp/tg rows. A small widget: slide the batch size and watch decode move toward the ridge (this is why vLLM batching is "free"). The math goes on `window`, tested in `verify.mjs` like FineTuneMath. | §I3 | M | P1 |
+| **W7** | **Under the hood: profiling two GPUs** | A deep block in "Two RTX 3090s". (1) `nvidia-smi dmon -s pucm` during `-sm layer` against `-sm tensor`: see the cards take turns against working together. (2) `nsys profile --trace=cuda,nvtx` on one decode step: find the all-reduce gaps. (3) `nccl-tests all_reduce_perf` for our PCIe latency. Includes our screenshots or trimmed text output from the rig, and fixes the "GPU utilisation should be high" trap at line 984. | §I2, §I4 | M | P1 |
+| **W8** | **Under the hood: what tensor parallelism costs** | A deep block in "vLLM vs Ollama → What changes with two GPUs". Megatron's two all-reduces per layer; NCCL's `2(n−1)/n` cost; the derived Qwen3.8-27B figures (10 KiB × 128 calls per token, about 40 µs of wire time); then **our measured per-call latency** from W7 explains why 2 cards give about 1.5-1.7×, not 2×. Also explains where NVLink would help, and why the claims vary. | §I4 | S (after W7) | P1 |
+| **W9** | **Under the hood: speculative decoding acceptance** | A deep block in "Speculative decoding on a GPU". Leviathan's expected-tokens formula with a worked α/γ table, MTP and draft heads against draft models (Medusa, EAGLE, Gloeckle, DeepSeek-V3), how to read the acceptance rate from llama-server and vLLM logs, and **our measured α and tok/s** for MTP and DFlash on Qwen3.8-27B from W1(c). Optional widget: α and γ sliders → expected tokens per pass. | §I5 | M | P1 |
+| **W10** | **Under the hood: quantization error** | A deep block in "Quantization, from first principles": Δ = R/(2^b−1), MSE = Δ²/12, why one outlier spoils a block, then outliers (LLM.int8), SmoothQuant, GPTQ and AWQ in one paragraph each. A widget: 32 weights in a block, drag one outlier, watch the other 31 weights' error. **Our measured KLD table** for Qwen3.8-27B (Q8_0 reference; Q6_K, Q4_K_M, UD-Q4_K_XL, UD-Q3_K_XL) fills the "nobody has tested" line for the GGUF side. | §I6 | M-L | P1 |
+| **W11** | **Under the hood: attention kernels** | A deep block in "Tokens, context and the KV cache": standard attention's N×N score matrix, how FlashAttention tiles it through SRAM (FA1/FA2; FA3 is Hopper-only, so skip it on a 3090), what a Gated DeltaNet layer's fixed-size state is, and why that makes 48 of 64 layers cache-free. This explains *why* the 64 KiB/token figure is what it is. | §I3 | M | P2 |
+| **W12** | **"Where to learn this" at the point of need** | Each deep block ends with one line linking the matching Reference learning-path track or paper ("Want the full picture? Track 2, lectures 7-8" / "Paper: 2211.17192, with an agent prompt in Papers worth reading"). This bridges newcomers to the learning path instead of leaving it at the end. | §II4 | S | P2 |
+
+## 4. Sequencing
+
+1. **W2** (build support) and **W1** (start the rig harness) in parallel. W2 is local; W1 runs on the PC. Ollama/llama.cpp/vLLM installs on the rig are checked first, then the harness runs as a supervised job. The 15-minute alive check and Mac mini supervisor registration follow CLAUDE.md §4.
+2. **W3, W4, W5:** the newcomer pass. These need no rig data and can ship as their own PR.
+3. **W7, then W8, W6, W9, W10:** the technical blocks, each written around W1/W7 rows.
+4. **W11, W12** last.
+
+Proposed PRs: (A) W2 + W3-W5, the newcomer track; (B) W1 harness + `bench/` data; (C) W6-W10, the Under-the-hood blocks citing `bench/`; (D) W11-W12.
+
+## 5. Acceptance criteria
+
+- `node scripts/verify.mjs` passes. New checks: balanced deep blocks, a checkpoint in every Part 1 section, every internal anchor resolves, and new widget math against hand-computed values (roofline intensity, expected tokens per pass, block-quant MSE).
+- **Newcomer:** from the top of the page, a reader with no terminal experience reaches a model's first answer by following only the "Start from zero" section, with no undefined term on that path. Test: read it with every deep block closed and list each term used before its definition; the target is zero.
+- **Technical:**
+  - At least 12 measured rows in `bench/` from the 2×3090 rig, each with build hash, driver, power cap and PCIe link.
+  - Every "Not measured on a 3090 yet" / "Untested on a 3090 here" callout is either replaced by our row or kept with a reason (e.g. "-sm tensor failed on qwen35: log excerpt").
+  - The guide shows one nsys timeline and one dmon trace from our rig.
+  - Measured α for MTP on Qwen3.8-27B.
+  - A measured KLD table for at least four quants.
+- **Side by side with the frontier:** the roofline and all-reduce blocks state the same results as *How To Scale Your Model*'s inference chapter (same formulas, cited) and add our consumer-card measurements, which it lacks. "Start from zero" reaches a first answer in no more steps than Ollama's quickstart.
+- No number without a label (measured here / primary / derived / secondary). Every `[unverified]` in research §I-§IV is resolved or still labelled when it ships.
+- Rendered and checked: open and closed states in the default theme and one dark theme, 1400 px and 360 px widths, and no horizontal scroll.
+
+## 6. Decisions for Joona (max 4)
+
+1. **Deep blocks closed by default?** Recommended: yes, closed, with the rail toggle to open all. The alternative is a page-level "Beginner / Under the hood" switch that hides content. That is simpler for the reader, but hidden content can't be searched with Ctrl+F.
+2. **No-terminal route:** recommend LM Studio as the zero-terminal first answer (it is free, but closed-source). Or keep Ollama only, which is open source and needs a terminal.
+3. **Rig runs:** can the harness run on the 2×3090 box unattended (supervised job, logs to `bench/`), or do you want to start each run yourself?
+4. **Publish our screenshots/traces from the rig?** They show hostnames and paths. Recommended: yes, after a scrub step in the harness that strips host, user and paths.
+
+## 7. Top 5 proposals (summary)
+
+1. **W1, measure the rig** (P0): turn every "ceiling / secondary / untested here" 3090 number into our own dated `bench/` row. This is the single biggest credibility and depth gain.
+2. **W2, one stream, two depths** (P0): closed "Under the hood" blocks plus checkpoint callouts, enforced by `verify.mjs`.
+3. **W3, Start from zero** (P0): terminal-free and terminal routes to a first answer with expected output, and the jargon-heavy path table moved after the plain explainer.
+4. **W7 + W8, profile two GPUs** (P1): `dmon`, `nsys` and `nccl-tests` on our cards, showing why two 3090s give about 1.6× and not 2× (per-call all-reduce latency, not PCIe bandwidth).
+5. **W9 + W10, the maths behind the speed-ups** (P1): speculative acceptance (expected tokens = (1−α^(γ+1))/(1−α)) and quantization error (Δ²/12, outliers), each with a widget and our measured α and KLD.
+
+---
+
 # Plan: Qwen3.8-27B on two RTX 3090s, quantization taught properly, larger models (2026-11-03)
 
 > **Status:** IMPLEMENTED 2026-11-03 (ITER below, qwen-guide#16) after Joona's "implement it all", with the §5 recommended defaults: rig-free parts shipped, Flash-Next as one licence paragraph, quantization as its own section, Q4_K_M stays the headline with UD-Q4_K_XL as the context option. W1-W5, W7-W10 shipped, plus W6 text and the vLLM section (#15). Still open: §3 measurements on the 2×3090 rig (not built yet; the owner's PC has an RTX 5060 Ti 8 GB), which replace the derived ceilings.

@@ -1,3 +1,148 @@
+# Research: two readers, one guide (checked 2026-11-11)
+
+> **Status:** evidence base for the 2026-11-11 plan (top of `plan.md`). This is an audit of `source/qwen-guide.md` at `e047d75` (2,500 lines, 51 sections, 10 widgets) against Joona's direction of 2026-11-11: *"We want to start getting deeply technical and catering towards technical people, and not only technical people, we want to also help bridge the gap between non-technical people and give them the tools and information they need so that they can go out there and acquire this knowledge."* Line numbers refer to `source/qwen-guide.md` at that commit. arXiv IDs and titles were confirmed through the arXiv API on 2026-11-11; doc pages were fetched the same day. Anything not confirmed is marked `[unverified]`. Compiled solo; no implementation. The 2026-11-03 evidence base follows below, unchanged.
+
+## I. Where a technical reader hits the ceiling
+
+### I1. No measured number from our own rig (highest-leverage gap)
+
+- The guide's author note says the rig exists: "I run Ubuntu on my own PC with two RTX 3090s" (line 343).
+- Every 3090 number is still a ceiling or someone else's run:
+  - "> 📝 **Not measured on a 3090 yet.** The Q8_0 and tensor-split numbers in this section are bandwidth ceilings or other people's reports." (line 500)
+  - "◆ **Untested on a 3090 here.** Qwen's own vLLM recipe lists RTX 5090 … with no Ampere example." (line 853)
+  - "**Nothing here was benchmarked on one fixed machine.**" (Caveats)
+- Counts in the source: `UNCERTAIN` 23, `secondary` 29, `derived` 21. `bench/` does not exist (`ls bench` → "No such file or directory").
+- research.md §G (2026-11-03) says the 3090s were "not in it yet". The 2026-11-03 plan §3 has a measurement plan that never ran. Its status line: "Still open: §3 measurements on the 2×3090 rig".
+- **Consequence:** the most technical readers, people with the same rig, get nothing they couldn't get from club-3090 or computingforgeeks. Our own dated `llama-bench` / `vllm bench serve` rows would be the guide's only primary measurement, and the plan's frontier criterion asked for exactly that ("a 2×3090 recipe that we have run ourselves, with measured t/s and KLD numbers").
+
+### I2. No profiling walkthrough
+
+- `nsys` appears 0 times, `dmon` 0 times, `nvidia-smi` 13 times. The only advice is `watch -n 1 nvidia-smi` (line 984) with "GPU utilisation should be high during generation".
+- That advice is the classic trap. `nvidia-smi`'s utilisation is the share of time *any* kernel was running, not how busy the SMs were. A decode-bound 27B shows high utilisation while it is bandwidth-starved. `[unverified]`: the exact definition wording must be quoted from the nvidia-smi doc page during the build.
+- **Primary tools that exist** (doc pages fetched 2026-11-11):
+  - `nvidia-smi dmon`: the NVIDIA System Management Interface docs (docs.nvidia.com/deploy/nvidia-smi) mention `dmon` 22 times. It gives per-second sm %, mem %, power, clocks and PCIe rx/tx per GPU, which is what shows a two-card split taking turns.
+  - Nsight Systems: the User Guide (docs.nvidia.com/nsight-systems/UserGuide) documents `nsys profile --trace=cuda,nvtx,…`. It gives the kernel timeline, so you can *see* the per-layer all-reduce gaps between two cards.
+  - NCCL: the env-var page documents `NCCL_DEBUG` and `NCCL_P2P_DISABLE` (the switches vLLM users hit on consumer cards without P2P).
+- No guide in the evidence base walks a reader from "my two cards are slow" to a timeline that shows why. This is a real gap and needs nothing but the rig.
+
+### I3. Attention kernels are named, never explained
+
+- "Flash attention" appears 6 times, always as a flag (`-fa on`, `OLLAMA_FLASH_ATTENTION=1`). The glossary entry is one line: "A faster, lower-memory way to compute attention."
+- `softmax` 0, `roofline` 0, `arithmetic intensity` 0.
+- **Primary sources:**
+  - FlashAttention, Dao et al. [arXiv 2205.14135](https://arxiv.org/abs/2205.14135) (2022): "IO-aware". It tiles Q, K and V through on-chip SRAM so the N×N score matrix never goes to HBM.
+  - FlashAttention-2, [2307.08691](https://arxiv.org/abs/2307.08691) (2023).
+  - FlashAttention-3, [2407.08608](https://arxiv.org/abs/2407.08608) (2024): Hopper only. Say so, so 3090 readers don't chase it.
+  - Gated DeltaNet, Yang et al. [2412.06464](https://arxiv.org/abs/2412.06464) (2024): the linear-attention layer in Qwen3.5/3.6/3.8. The guide uses the name (line 581) but never says what the fixed-size state is or why it makes 3 of 4 layers cache-free.
+- **Roofline framing:** Williams, Waterman & Patterson, "Roofline", CACM 2009 `[unverified: citation details to confirm]`. For LLMs, Yuan et al. "LLM Inference Unveiled: Survey and Roofline Model Insights", [2402.16363](https://arxiv.org/abs/2402.16363) (2024). Frontier explainer: Google DeepMind's *How To Scale Your Model*, inference chapter (jax-ml.github.io/scaling-book/inference, HTTP 200, mentions roofline 12×, AllReduce 3×, speculative 8×).
+- **Derived teaching example** (from config facts in research §A, label "derived"):
+  - Decode at batch 1 does about 2 FLOPs per weight per token.
+  - Q4_K_M reads about 0.69 bytes per weight (5.5 bpw ÷ 8).
+  - Arithmetic intensity is therefore about 2.9 FLOP/byte.
+  - The 3090's ridge point is peak FLOPs ÷ 936 GB/s. The GA102 dense FP16 tensor peak `[unverified: take from NVIDIA's Ampere GA102 whitepaper]` puts it in the tens of FLOP/byte.
+  - So decode sits far left of the ridge, which is bandwidth-bound, and prefill of a 512-token batch sits right of it, which is compute-bound. That one picture explains the guide's existing "Prefill versus decode" section (line 454) and why batching (vLLM) is free throughput.
+
+### I4. All-reduce cost is asserted, not computed
+
+- `all-reduce` 0, `NCCL` 0. Line 801 says tensor parallelism has the cards "swap partial results", and that the cost "travels over PCIe". It gives no number.
+- **Primary:**
+  - Megatron-LM, Shoeybi et al. [1909.08053](https://arxiv.org/abs/1909.08053) (already cited at line 801). Its tensor-parallel MLP and attention blocks need two all-reduces per layer in the forward pass `[unverified: quote the exact sentence from §3 during the build]`.
+  - NCCL-tests `doc/PERFORMANCE.md` (fetched 2026-11-11), lines 50-63: "we need 2(n-1) data transfers … `t = (S/B) * (2*(n-1)/n)`".
+- **Derived for Qwen3.8-27B decode on 2 cards** (hidden 5120, 64 layers, from research §A):
+  - Each all-reduce moves 5120 × 2 bytes = 10 KiB. At n = 2, the factor 2(n−1)/n = 1, so about 10 KiB per call.
+  - Two per layer × 64 layers = 128 calls per token, about 1.3 MB per token.
+  - At PCIe 4.0 x16, about 31.5 GB/s per direction (16 GT/s × 16 lanes × 128/130, derived from the PCIe 4.0 rate), that is about 40 µs of wire time per token: negligible.
+  - The real cost is **per-call latency × 128**. At a per-call latency in the tens of µs `[unverified: must be measured with nccl-tests all_reduce_perf on the rig]`, that is a few ms against a decode budget of about 20 ms per token.
+- **The teaching point:** at batch 1, two consumer cards are latency-bound, not bandwidth-bound, on the link. That explains the 1.5-1.7× (not 2×) in the computingforgeeks table (line 806) and why NVLink claims vary so much (line 521). Measurable directly with `nccl-tests` and `nsys`.
+
+### I5. Speculative decoding has no acceptance-rate maths
+
+- `acceptance` appears once (line 1173: "depends on how often the target accepts"). MTP and DFlash sidecars are named (line 1165) and "hasn't been measured here" (line 497).
+- **Primary:**
+  - Leviathan et al. [2211.17192](https://arxiv.org/abs/2211.17192) (2022): expected tokens per target pass = (1 − α^(γ+1)) / (1 − α), for acceptance rate α and draft length γ `[unverified: confirm the equation number in §3 during the build]`.
+  - Chen et al. [2302.01318](https://arxiv.org/abs/2302.01318) (2023): speculative sampling, with the same distribution guarantee.
+  - Medusa [2401.10774](https://arxiv.org/abs/2401.10774) and EAGLE [2401.15077](https://arxiv.org/abs/2401.15077) (2024): draft heads, not draft models.
+  - Multi-token prediction: Gloeckle et al. [2404.19737](https://arxiv.org/abs/2404.19737) (2024), and the DeepSeek-V3 report [2412.19437](https://arxiv.org/abs/2412.19437), which uses MTP modules for speculative decoding.
+- **Derived example:** α = 0.7, γ = 3 → (1 − 0.7⁴)/0.3 ≈ 2.53 tokens per target pass. The extra draft cost means real speedup is lower. This is the formula that turns "check the acceptance rate in the log" (line 873) into something a reader can reason with.
+- **What the engines expose:** the llama-server README has `--spec-draft-n-max` (default 3) and `--spec-draft-n-min`. It also has benchmarking-only `--spec-synth-len` / `--spec-synth-rates`, which set a *synthetic* acceptance rate: a ready-made way to teach the formula on real hardware (README lines 266-270, fetched 2026-11-11). Where vLLM reports the acceptance rate (metrics or log line) is `[unverified]`: the spec_decode doc page didn't render the word in a static fetch, so take it from a real run.
+
+### I6. Quantization error is described by effect, never by mechanism
+
+- The quant section (lines 608-680) is good on *what* (bpw, k-quant blocks, papers table, KLD how-to).
+- It has no *why*: `outlier` 0, `rounding` 2. There is no rounding-error picture, no reason per-block scales help, and no reason AWQ/GPTQ beat round-to-nearest.
+- **Primary:**
+  - LLM.int8(), Dettmers et al. [2208.07339](https://arxiv.org/abs/2208.07339): emergent outlier features in activations at scale.
+  - SmoothQuant [2211.10438](https://arxiv.org/abs/2211.10438): migrate activation outliers into weights by per-channel scaling.
+  - GPTQ [2210.17323](https://arxiv.org/abs/2210.17323): second-order error compensation, layer by layer.
+  - AWQ [2306.00978](https://arxiv.org/abs/2306.00978): protect the ~1% salient weight channels, chosen by activation magnitude.
+  - The last two are already named in the guide but not explained.
+- **Derivable teaching content:** uniform b-bit quantization of a block with range R has step Δ = R/(2^b − 1) and rounding error ~U(−Δ/2, Δ/2), so MSE = Δ²/12. One outlier inflates R for the whole block, which is why blocks of 32 (Q4_K) beat per-tensor scales, and why outliers are the enemy. This can be a widget: a block of 32 weights, drag one outlier, watch the error of the other 31.
+- **Measured KLD on our rig** for Q8_0 → Q6_K → Q4_K_M → UD-Q4_K_XL → UD-Q3_K_XL would be new data. The guide says "What nobody has tested yet: Unsloth's per-layer 'dynamic' GGUFs against AWQ and GPTQ on the same hybrid Qwen3.8 model" (line 638).
+
+### I7. Smaller technical gaps
+
+- **Stale glossary anchors** (confirmed by grep of section ids):
+  - `[Quantization](#faster)` should point to `#quant`.
+  - `[Hybrid attention](#mac)` points to Part 3's mlx-lm path; it should be `#tokens`.
+  - `[Speculative decoding](#faster)` misses "Speculative decoding on a GPU".
+- **The llama-bench note is dated before v0.8.0:** "Flags checked against the llama-bench README on 2026-10-16 (before llama.cpp v0.8.0; re-check on your build)" (line 975).
+- **The power-limit advice has no measured curve** of t/s against W for the 27B on our cards (line 472). That is a 10-minute sweep with `nvidia-smi -pl` + `llama-bench`.
+
+## II. Where a newcomer gets lost
+
+### II1. Jargon before definition
+
+The first table a newcomer meets ("Pick your path", lines 15-31) uses about a dozen undefined terms. This table shows where key terms are first used against where they are explained:
+
+| Term | First used (line) | Explained (line) | Gap |
+|---|---|---|---|
+| KV cache | 17 | 576 | ~560 lines |
+| VRAM | 17 | 406 (glossary at 2486) | ~390 |
+| Q4_K_M / quantization | 25 | 62 (one paragraph), 621 (fully) | ~40 / ~600 |
+| MoE | 24 | 504 | ~480 |
+| tensor split / `-sm tensor` | 26 | 486 | ~460 |
+| KLD | 500 | 648 | ~150 |
+| flash attention | 313 | glossary only | never explained in the body |
+
+The good plain-language explainer, "What you're actually running" (line 50), comes *after* the table. The glossary exists (line 2423, 44 rows) but sits at the very end, with no inline links into it. It lacks bpw, KLD, perplexity, PagedAttention, continuous batching, prefix caching, MTP, imatrix, pipeline parallel, all-reduce, PCIe, terminal, llama.cpp, Ollama and Hugging Face (checked against the table at lines 2427-2473).
+
+### II2. Almost no "what you'll have at the end" checkpoints
+
+- One real checkpoint callout in 2,500 lines: "> 📝 **Checkpoint.** `ollama ps` shows 100% GPU and you have a measured tok/s" (line 544). Other matches of "checkpoint" are model checkpoints.
+- "You'll have" appears 0 times, and "By the end" 0 times.
+- No section opens with a goal and a time estimate, or closes with "you should now see X; if you see Y, go to Troubleshooting".
+
+### II3. No zero-to-first-answer path that assumes nothing
+
+- **The install section** (line 232) starts at `brew install ollama` / `curl … | sh`.
+- **It assumes:** a terminal (the word first appears at line 299, in the Windows settings steps after the install commands at line 237; no "how to open one" on Mac, Windows or Linux); Homebrew on a Mac (never introduced); knowing what success output looks like (no sample output after `ollama run`).
+- **Order problem:** the Linux section ("From a fresh Ubuntu install to a working GPU", line 360) comes *after* the install section that already gave the Linux one-liner.
+- **Windows** gets "download the installer". Good, but the following commands assume a shell without saying "open PowerShell".
+- **The frontier for this reader** is Ollama's own quickstart and LM Studio's GUI path `[unverified: compare during build]`. LM Studio is mentioned in the guide but not offered as the no-terminal route.
+
+### II4. No signposting of depth
+
+- Every section mixes levels in one stream. The NVIDIA section (lines 404-545) goes from "VRAM is the budget" to `-sm row` split-buffer errors and NVLink claims with no marker saying "you can skip this".
+- `<details>` appears 0 times in the source. The build script has no syntax for an optional deep block: `scripts/build.py` handles `section`, `part`, `widget` markers and callouts only (lines 5-6, 26-58).
+- The Reference "free learning path" (line 2096) is already a two-audience structure: Track 0 orientation through Track 6 university courses. The main guide doesn't link into it at the point of need.
+
+## III. What a two-track structure needs from the build
+
+- **Optional deep blocks:** add one marker, e.g. `<!-- deep title="…" -->` … `<!-- /deep -->`, rendered as `<details class="deep">` with a fixed "Under the hood" tag. Closed by default, so the beginner stream reads straight through. Opened, it is the technical track in place, with no second document to drift.
+- **Beginner checkpoints:** extend the existing callout syntax with a `✅ Checkpoint` tag (callouts already parse `📝 ◆ ⚠`, build.py line 26).
+- **verify.mjs** (99 lines, 42 checks) must assert:
+  - every `deep` block is closed;
+  - every section in Part 1 has a checkpoint;
+  - every glossary `#anchor` resolves to a real section id. This would have caught I7, which is the "build the check that makes the class impossible" rule.
+- **The rig harness:** a script that runs the fixed `llama-bench` / `llama-perplexity` / `vllm bench serve` / `nccl-tests` matrix and writes `bench/YYYY-MM-DD-*.jsonl` with build hashes, driver, power cap and PCIe link width. The guide then cites rows from `bench/`, and freshness.py can flag a number older than N days.
+
+## IV. Frontier references
+
+- **Technical:** *How To Scale Your Model* (Google DeepMind, jax-ml.github.io/scaling-book) for roofline, all-reduce and speculative maths; Hugging Face's *Ultra-Scale Playbook* (huggingface.co/spaces/nanotron/ultrascale-playbook) for parallelism; Horace He's *Making Deep Learning Go Brrrr* (horace.io/brrr_intro.html) for compute/memory/overhead bound. All return HTTP 200 (2026-11-11). None of them runs on two consumer 3090s with a hybrid-attention 27B. That, plus our own measured rows, is how we exceed them.
+- **Beginner:** Ollama's quickstart and LM Studio's onboarding `[unverified: side-by-side read during build]`. They get a first answer fastest but explain nothing. We beat them by matching their time-to-first-answer *and* ending with the reader understanding why the model fits.
+
+---
+
 # Research: Qwen3.8-27B, quantization and dual RTX 3090 (checked 2026-11-03)
 
 > **Status:** evidence base for the 2026-11-03 plan (top of `plan.md`). Compiled solo on 2026-11-03 from primary sources: Qwen's Hugging Face org (API listing, `config.json`, model card, LICENSE), Hugging Face file trees for the GGUF repos, the llama.cpp server README at master (release v0.8.0, 2026-10-28), the SGLang Qwen3.8-27B cookbook, Ollama's library page and arXiv abstracts. Secondary sources are labelled. The 2026-10-16 evidence base follows below, unchanged.
