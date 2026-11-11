@@ -1,5 +1,32 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-11-11: ITER: Linux for local AI, and vLLM vs Ollama rebuilt around two GPUs
+
+**Why:** Joona asked for the guide to push Linux, and to make vLLM the clear pick for more than one consumer GPU. He runs Ubuntu on his two-RTX-3090 PC with a small Windows install for Windows-only work. He found a fresh Windows install more frustrating than Ubuntu, and Linux easier to work in with agents. He also pasted a common "Ollama for development, vLLM for production" comparison to check.
+**Finding:** the old section said "with one user, the gap mostly disappears". That holds on one GPU, but not on two. Ollama's FAQ: a model that fits on one GPU is loaded on that GPU, so a 19 GB Qwen3.8-27B leaves the second 3090 idle; a bigger model is spread by layers and the cards take turns. A dual-3090 test from October 2026, with no NVLink (computingforgeeks, one rig, secondary), measured tensor parallelism at 1.5 to 1.7 times one card for a single user. On a 70B, layer split gave 19.5 t/s against 31.9 for llama.cpp `-sm tensor` and 31.3 for vLLM. The pasted table's 41 vs 793 t/s and 673 vs 80 ms are Red Hat's single-A100, 256-user peak test. The real deciding factors are concurrency and the number of GPUs, not development against production.
+**Change:**
+- New section "Linux: the platform local AI is built on" (#linux), between Install and the NVIDIA PC section. It covers:
+  - why Linux;
+  - the author's note;
+  - Ubuntu LTS against Omarchy (DHH, Arch + Hyprland, v4.5.0; "we haven't used it");
+  - the dual-boot clock fix (`timedatectl set-local-rtc 1` with no `--adjust-system-clock`);
+  - Ubuntu NVIDIA driver steps from Ubuntu's docs;
+  - the commands you'll use;
+  - free Linux courses (Canonical tutorial, MIT Missing Semester 2026, Linux Foundation LFS101 at $0 and 60 h, OverTheWire Bandit, The Linux Command Line, ArchWiki NVIDIA).
+- vLLM section retitled "vLLM vs Ollama: two GPUs, many requests, and what each one is", with:
+  - a layers table (weights, engine, server, API, front-end, harness) explaining what Ollama and vLLM are;
+  - "What changes with two GPUs", with the measured table;
+  - an NVLink callout: the docs' pipeline-parallel advice is about throughput, not single-user speed;
+  - a note on the pasted comparison table;
+  - "one person, one GPU" and two new two-GPU rows in "Which to use".
+- vLLM install updated to the docs' uv steps (`uv venv --python 3.12 --seed --managed-python`, `uv pip install vllm --torch-backend=auto`, `vllm download-kernels`), v0.33.0 (2026-11-02).
+- Router: the two-3090 row now says "Linux, then llama.cpp `-sm tensor` or vLLM"; the 24 GB row says Linux is recommended.
+- The Windows/WSL paragraph now recommends Linux.
+- The two-3090 split modes gain the measured `-sm tensor` result and the `-sm row` CUDA failure.
+- The learning path points to the Linux courses.
+
+**Verified:** `node scripts/verify.mjs` PASS (389 checks); Omarchy, Ubuntu driver, vLLM install, Ollama FAQ, LFS101 and Missing Semester pages fetched on 2026-11-11; all new links return 200; renders at 1400 px and 360 px with no overflow and no console errors.
+
 ## 2026-11-05: ITER: "Papers worth reading" section, plus prompts for agents
 
 - **What:** Joona asked for recommended papers, and for suggesting that readers have their agents read them or search for recent papers and look for abstractions to reuse. New Reference section `#papers`: how to read a paper (with two paper-and-rebuttal pairs), a 35-entry list by topic with the 2026 preprints marked, two copyable agent prompts (read one paper; search the last 90 days), the `pdftotext` route for small context windows, warnings that papers are untrusted input and that agents can invent citations, and a one-change-at-a-time closing. Linked from the intro, the goal table and "Stay current".
