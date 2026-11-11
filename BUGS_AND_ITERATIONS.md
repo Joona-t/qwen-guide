@@ -1,5 +1,16 @@
 # Bugs & Iterations — Qwen, locally
 
+## 2026-11-11: BUG: Pages deploy of PR #22 failed to start three times
+
+**Symptom:**
+- After PR #22 (d6f353f) merged, the "pages build and deployment" run ended in `startup_failure` three times, at 20:41, 20:45 and 20:50 UTC, with no jobs, check runs or annotations.
+- GitHub Status showed all systems operational.
+- A control rebuild of raw-thought-reader on the same account succeeded, so Actions and billing are fine.
+
+**Likely cause [unverified]:** GitHub's legacy Pages builder runs Jekyll over the whole repo, and this repo now carries large Markdown files (source, plan, research). GitHub gave no reason, so this is the best remaining candidate.
+
+**Fix:** add `.nojekyll`. The site is a single prebuilt `index.html`, so Jekyll has no work to do, and skipping it removes that step.
+
 ## 2026-11-11: ITER: Two tracks, part A: Start from zero, checkpoints and "Under the hood" blocks
 
 **Why:** Joona wants the guide deeply technical and also a bridge for non-technical readers (plan.md, two-track pass, research.md "two readers, one guide"). The research found:
