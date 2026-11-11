@@ -4,6 +4,8 @@
 The Markdown stays readable on GitHub; HTML comments carry the build hints:
   <!-- section id="x" kicker="Part 1 · Foundations" -->   starts a <section>
   <!-- widget:name -->                                    inserts template/widgets/name.html
+  <!-- deep title="..." --> ... <!-- /deep -->            an "Under the hood" block, closed by default
+  > 🎯 **You'll have:** ... / > ✅ **Checkpoint.** ...     goal line and checkpoint callouts
 Run: python3 scripts/build.py          (writes index.html)
      python3 scripts/build.py --check  (exit 1 if index.html is stale)
 """
@@ -25,9 +27,10 @@ def inline(t):
 
 def callout(text):
     t = text.strip()
-    kinds = {"⚠": ("gotcha", "Watch out"), "◆": ("caveat", "Caveat"), "📝": ("note", "Note")}
+    kinds = {"⚠": ("gotcha", "Watch out"), "◆": ("caveat", "Caveat"), "📝": ("note", "Note"),
+             "✅": ("check", "Checkpoint"), "🎯": ("goal", "You'll have")}
     cls, tag = kinds.get(t[:1], ("note", "How this guide was checked"))
-    m = re.match(r"^(⚠|◆|📝)\s*\*\*(.+?)\*\*\s*(.*)$", t, re.S)
+    m = re.match(r"^(⚠|◆|📝|✅|🎯)\s*\*\*(.+?)\*\*\s*(.*)$", t, re.S)
     if m:
         tag, body = m.group(2).rstrip('.'), m.group(3)
     elif t[:1] in kinds:
@@ -47,6 +50,13 @@ def blocks(lines):
             j = i + 1
             while not lines[j].startswith("```"): j += 1
             out.append(code(l[3:], lines[i+1:j])); i = j + 1; continue
+        dm = re.match(r'^<!-- deep title="([^"]+)" -->$', l.strip())
+        if dm:
+            j = i + 1
+            while lines[j].strip() != "<!-- /deep -->": j += 1   # unclosed block raises IndexError: fail the build loudly
+            out.append(f'<details class="deep"><summary><span class="deep-tag">Under the hood</span> {inline(dm.group(1))}</summary>'
+                       f'<div class="deep-body">\n      {blocks(lines[i+1:j])}\n      </div></details>')
+            i = j + 1; continue
         m = re.match(r"^<!-- widget:(\w+) -->$", l.strip())
         if m:
             out.append((T / "widgets" / f"{m.group(1)}.html").read_text(encoding="utf-8").strip()); i += 1; continue
@@ -283,9 +293,9 @@ def build():
 </section>
 
 <div class="layout">
-  <nav class="toc" aria-label="Contents"><p class="eyebrow">Contents</p>{toc_items}</nav>
+  <nav class="toc" aria-label="Contents"><p class="eyebrow">Contents</p><button type="button" class="deep-toggle" aria-pressed="false">Open all "Under the hood"</button>{toc_items}</nav>
   <main id="main">
-    <details class="toc-mobile"><summary>Contents</summary>{toc_items}</details>
+    <details class="toc-mobile"><summary>Contents</summary><button type="button" class="deep-toggle" aria-pressed="false">Open all "Under the hood"</button>{toc_items}</details>
     {body}
   </main>
 </div>

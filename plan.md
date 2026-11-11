@@ -1,6 +1,6 @@
 # Plan: one guide, two tracks: deeper for technical readers, easier for newcomers (2026-11-11)
 
-> **Status:** PROPOSED, not implementing yet. It waits for Joona's annotations and "implement it all". Evidence: `research.md` top section, "Research: two readers, one guide (checked 2026-11-11)", cited below as §I-§IV.
+> **Status:** PR A (W2, W3, W4, W5, W12) IMPLEMENTED 2026-11-11 after Joona: "Always implement it all … for simple changes like this, you should be able to just implement it." Defaults used for §6: deep blocks closed with a rail toggle; LM Studio as the no-terminal route; rig runs as a locked, supervised job; traces scrubbed. W1 and W6-W11 wait on the 2×3090 rig, whose GPUs were held by another agent's vLLM run (`~/.gpu.lock`) at the time. Evidence: `research.md` top section, "Research: two readers, one guide (checked 2026-11-11)", cited below as §I-§IV.
 
 ## 1. Goal
 

@@ -96,4 +96,17 @@ ok(!/\b(fetch|XMLHttpRequest|WebSocket|sendBeacon)\s*\(/.test(script), 'network 
 const personal = /\/Users\/[A-Za-z]|\/home\/[A-Za-z]|C:\\Users\\/;   // no local home paths in published files
 for (const [name, text] of [['index.html', html.replace(/data:[^"')]+/g, '')], ['source', md]]) ok(!personal.test(text), `personal reference in ${name}: ${text.match(personal)}`);
 
+// two tracks: every deep block closes, and every Part 1 section ends with a checkpoint (plan W2/W5)
+{
+  const opens = (md.match(/^<!-- deep title="[^"]+" -->$/gm) || []).length, closes = (md.match(/^<!-- \/deep -->$/gm) || []).length;
+  ok(opens === closes, `deep blocks unbalanced: ${opens} open, ${closes} close`);
+  ok(html.split('<details class="deep">').length - 1 === opens, 'every deep block renders');
+  const p1 = md.split(/^<!-- part title="Part 1[^"]*" -->$/m)[1].split(/^<!-- part title=/m)[0];
+  for (const sec of p1.split(/^(?=<!-- section id=")/m).filter(x => x.startsWith('<!-- section'))) {
+    const id = sec.match(/id="([^"]+)"/)[1];
+    if (id.startsWith('learn-')) continue;            // reading lists have nothing to check
+    ok(/^> ✅ \*\*Checkpoint/m.test(sec), `Part 1 section #${id} has no ✅ Checkpoint`);
+    ok(/^> 🎯 \*\*You'll have/m.test(sec), `Part 1 section #${id} has no 🎯 goal line`);
+  }
+}
 console.log(JSON.stringify({ result: 'PASS', checks }, null, 1));

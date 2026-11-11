@@ -36,6 +36,17 @@
   apply('theme', savedTheme === 'candy' ? 'bubblegum' : (savedTheme || 'basalt'));
   apply('font', Persist.get('qft-font') || 'serif');
 
+  /* ---- "Open all Under the hood": one switch for the technical track, remembered per viewer ---- */
+  var deeps = document.querySelectorAll('details.deep'), toggles = document.querySelectorAll('.deep-toggle');
+  function setDeep(open){
+    deeps.forEach(function(d){ d.open = open; });
+    toggles.forEach(function(t){ t.setAttribute('aria-pressed', open ? 'true' : 'false'); t.textContent = open ? 'Close all "Under the hood"' : 'Open all "Under the hood"'; });
+    Persist.set('qft-deep', open ? '1' : '0');
+  }
+  if(!deeps.length){ toggles.forEach(function(t){ t.hidden = true; }); }
+  toggles.forEach(function(t){ t.addEventListener('click', function(){ setDeep(t.getAttribute('aria-pressed') !== 'true'); }); });
+  if(Persist.get('qft-deep') === '1'){ setDeep(true); }
+
   /* ---- Copy buttons on code blocks ---- */
   document.querySelectorAll('.code').forEach(function(block){
     var b = block.querySelector('.copy'), pre = block.querySelector('pre');
